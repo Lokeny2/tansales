@@ -11,38 +11,44 @@ export interface Product {
 }
 
 const TANITE_DATABASE_MOCK: Product[] = [
-  { 
-    id: "1", 
-    name: "Heavyweight Boxy Tee", 
-    price: "$30.0", 
-    category: "Tees", 
+  {
+    id: "1",
+    name: "Heavyweight Boxy Tee",
+    price: "$30.0",
+    category: "Tees",
     tag: "NEW",
-    imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
-    description: "Cut from 280GSM ultra-soft combed cotton. Features a relaxed boxy silhouette, dropped shoulders, and a thick ribbed collar that holds its shape over time.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
+    description:
+      "Cut from 280GSM ultra-soft combed cotton. Features a relaxed boxy silhouette, dropped shoulders, and a thick ribbed collar that holds its shape over time.",
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "Off-White", "Slate"]
+    colors: ["Black", "Off-White", "Slate"],
   },
-  { 
-    id: "2", 
-    name: "Signature Oversized Hoodie", 
-    price: "$65.0", 
-    category: "Hoodies", 
+  {
+    id: "2",
+    name: "Signature Oversized Hoodie",
+    price: "$65.0",
+    category: "Hoodies",
     tag: "PRE-ORDER",
-    imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1000&auto=format&fit=crop",
-    description: "Constructed with heavy loopback French terry cloth. Oversized drape with no drawcolds for a clean, structural aesthetic. Double-lined hood.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1000&auto=format&fit=crop",
+    description:
+      "Constructed with heavy loopback French terry cloth. Oversized drape with no drawcolds for a clean, structural aesthetic. Double-lined hood.",
     sizes: ["M", "L", "XL"],
-    colors: ["Obsidian", "Charcoal"]
+    colors: ["Obsidian", "Charcoal"],
   },
-  { 
-    id: "3", 
-    name: "Modular Canvas Jacket", 
-    price: "$110.0", 
-    category: "Outerwear", 
+  {
+    id: "3",
+    name: "Modular Canvas Jacket",
+    price: "$110.0",
+    category: "Outerwear",
     tag: "LIMITED",
-    imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000&auto=format&fit=crop",
-    description: "Weatherproof 12oz duck canvas structural outer shell. Features modular hidden zip pockets, industrial steel enclosures, and full interior satin lining.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000&auto=format&fit=crop",
+    description:
+      "Weatherproof 12oz duck canvas structural outer shell. Features modular hidden zip pockets, industrial steel enclosures, and full interior satin lining.",
     sizes: ["S", "M", "L"],
-    colors: ["Sand", "Olive", "Black"]
+    colors: ["Sand", "Olive", "Black"],
   },
 ];
 
