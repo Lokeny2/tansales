@@ -1,237 +1,275 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
-export default function AdminProductsDashboard() {
-  // Simulated verification settings
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [formInputs, setFormInputs] = useState({
-    title: "",
-    description: "",
+export default function AdminProductsPage() {
+  const [formData, setFormData] = useState({
+    name: "",
     price: "",
-    category: "Tees",
-    sizes: [] as string[],
+    category: "",
+    tag: "NEW",
     imageUrl: "",
+    description: "",
+    sizes: "",
+    colors: "",
   });
 
-  const handleSizeToggle = (size: string) => {
-    setFormInputs((prev) => ({
-      ...prev,
-      sizes: prev.sizes.includes(size)
-        ? prev.sizes.filter((s) => s !== size)
-        : [...prev.sizes, size],
-    }));
+  const [status, setStatus] = useState<{
+    type: "idle" | "loading" | "success" | "error";
+    message: string;
+  }>({ type: "idle", message: "" });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(
-      `Scaffold Payload Validated: Ready to dispatch JSON data structure to /api/products POST route!\n\n${JSON.stringify(formInputs, null, 2)}`,
-    );
-  };
+    setStatus({
+      type: "loading",
+      message: "⚡ EXECUTING DB TRANSACTION PIPELINE...",
+    });
 
-  // Render simulated unauthorized screen if admin access token falls low
-  if (!isAdmin) {
-    return (
-      <div className="max-w-md mx-auto py-32 px-6 text-center space-y-4">
-        <h1 className="text-2xl font-black uppercase text-red-400 tracking-tight">
-          Security Access Exception
-        </h1>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest">
-          Your authorization signature role claims customer rank. Route requires
-          secure store manager scope overrides.
-        </p>
-        <button
-          onClick={() => setIsAdmin(true)}
-          className="bg-white/10 px-4 py-2 rounded-full text-[10px] tracking-widest uppercase font-bold text-white hover:bg-white/20"
-        >
-          Simulate Root Login
-        </button>
-      </div>
-    );
-  }
+    // Format fields to match your API requirements
+    const payload = {
+      ...formData,
+      sizes: formData.sizes
+        ? formData.sizes.split(",").map((s) => s.trim())
+        : [],
+      colors: formData.colors
+        ? formData.colors.split(",").map((c) => c.trim())
+        : [],
+    };
+
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to log product entry.");
+      }
+
+      setStatus({
+        type: "success",
+        message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${data.id} ]`,
+      });
+      setFormData({
+        name: "",
+        price: "",
+        category: "",
+        tag: "NEW",
+        imageUrl: "",
+        description: "",
+        sizes: "",
+        colors: "",
+      });
+    } catch (error: any) {
+      console.error("Database write failure:", error);
+      setStatus({
+        type: "error",
+        message: `❌ PIPELINE EXCEPTION: ${error.message}`,
+      });
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      {/* Admin Action Header Row */}
-      <header className="border-b border-white/10 pb-6 mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 selection:bg-emerald-500/30 font-sans">
+      {/* Structural Header */}
+      <header className="max-w-3xl mx-auto mb-10 flex justify-between items-end border-b border-neutral-800 pb-6">
         <div>
-          <span className="text-[10px] tracking-widest text-accent-cyan uppercase block mb-1">
-            Management Portal
-          </span>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-            Inventory Architect
+          <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+            CONTROL CENTER
           </h1>
+          <p className="text-xs text-neutral-500 font-mono mt-1">
+            [ inventory_provisioning_pipeline.v1 ]
+          </p>
         </div>
-        <button
-          onClick={() => setIsAdmin(false)}
-          className="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] tracking-widest font-bold uppercase px-4 py-2 rounded-full hover:bg-red-500/20 transition-all"
+        <a
+          href="/products"
+          className="text-xs font-mono text-neutral-400 hover:text-white border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 rounded-md transition-colors"
         >
-          Simulate Log Out
-        </button>
+          ← VIEW LIVE CATALOG
+        </a>
       </header>
 
-      {/* Grid Layout Configuration */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-        {/* Left Hand Element Block: Core Product CRUD Management Input Form */}
-        <section className="lg:col-span-2 glass-panel p-6 rounded-sm">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-300 border-b border-white/5 pb-3 mb-6">
-            Create New SKU Record
-          </h2>
-
-          <form
-            onSubmit={handleFormSubmit}
-            className="space-y-5 text-xs uppercase tracking-wider text-zinc-400"
-          >
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-zinc-500 tracking-widest font-bold">
-                Product Title
-              </label>
-              <input
-                type="text"
-                required
-                value={formInputs.title}
-                onChange={(e) =>
-                  setFormInputs({ ...formInputs, title: e.target.value })
-                }
-                placeholder="e.g., Heavyweight Boxy Tee"
-                className="bg-white/[0.02] border border-white/10 rounded-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-zinc-500 tracking-widest font-bold">
-                  Base Valuation Price ($)
+      <main className="max-w-3xl mx-auto">
+        {/* Glassmorphic Form Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Row 1: Name and Price */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="e.g., Minimalist Kuro Hoodie"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                  Price (USD) *
                 </label>
                 <input
                   type="number"
+                  name="price"
                   step="0.01"
                   required
-                  value={formInputs.price}
-                  onChange={(e) =>
-                    setFormInputs({ ...formInputs, price: e.target.value })
-                  }
-                  placeholder="30.00"
-                  className="bg-white/[0.02] border border-white/10 rounded-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-white"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-zinc-500 tracking-widest font-bold">
-                  Classification Category
+            </div>
+
+            {/* Row 2: Category and Tag */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                  Category *
+                </label>
+                <input
+                  type="text"
+                  name="category"
+                  required
+                  value={formData.category}
+                  onChange={handleChange}
+                  placeholder="outerwear, pants, shirts"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                  Release Status Tag
                 </label>
                 <select
-                  value={formInputs.category}
-                  onChange={(e) =>
-                    setFormInputs({ ...formInputs, category: e.target.value })
-                  }
-                  className="bg-zinc-900 border border-white/10 rounded-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-white uppercase tracking-wider"
+                  name="tag"
+                  value={formData.tag}
+                  onChange={handleChange}
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors"
                 >
-                  <option value="Tees">Tees</option>
-                  <option value="Hoodies">Hoodies</option>
-                  <option value="Outerwear">Outerwear</option>
+                  <option value="NEW">NEW</option>
+                  <option value="ESSENTIAL">ESSENTIAL</option>
+                  <option value="LIMITED">LIMITED</option>
+                  <option value="CONCEPT">CONCEPT</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-zinc-500 tracking-widest font-bold">
-                Overview Detailed Description
-              </label>
-              <textarea
-                rows={3}
-                required
-                value={formInputs.description}
-                onChange={(e) =>
-                  setFormInputs({ ...formInputs, description: e.target.value })
-                }
-                placeholder="Enter fabric density breakdown details, silhouette profiles, structural specs..."
-                className="bg-white/[0.02] border border-white/10 rounded-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-white normal-case tracking-wide"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-zinc-500 tracking-widest font-bold">
-                Image CDN Asset Token URL
+            {/* Row 3: Image URL */}
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                Image Resource URL
               </label>
               <input
                 type="url"
-                required
-                value={formInputs.imageUrl}
-                onChange={(e) =>
-                  setFormInputs({ ...formInputs, imageUrl: e.target.value })
-                }
-                placeholder="https://images.unsplash.com/..."
-                className="bg-white/[0.02] border border-white/10 rounded-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-white normal-case tracking-wide"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleChange}
+                placeholder="https://images.unsplash.com/photo-..."
+                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono"
               />
             </div>
 
-            {/* Sizing Array Checkers Checklist Selection Grid */}
-            <div className="space-y-2">
-              <label className="text-[10px] text-zinc-500 tracking-widest block font-bold">
-                Active Dimensions Target Matrix
-              </label>
-              <div className="flex gap-2">
-                {["S", "M", "L", "XL"].map((size) => {
-                  const isActive = formInputs.sizes.includes(size);
-                  return (
-                    <button
-                      type="button"
-                      key={size}
-                      onClick={() => handleSizeToggle(size)}
-                      className={`w-12 h-12 border text-xs font-bold rounded-sm transition-all ${
-                        isActive
-                          ? "bg-accent-cyan text-white border-accent-cyan"
-                          : "border-white/10 text-zinc-400 hover:border-white"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-white text-obsidian font-bold text-xs uppercase tracking-widest py-4 rounded-sm hover:bg-accent-lime hover:text-white transition-all cursor-pointer"
-            >
-              Execute Production SKU Dispatch
-            </button>
-          </form>
-        </section>
-
-        {/* Right Hand Element Block: Current Stock Capacity Metadata Review Panel */}
-        <section className="space-y-6">
-          <div className="glass-panel p-6 rounded-sm">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 border-b border-white/5 pb-2 mb-4">
-              Inventory Telemetry
-            </h3>
-            <div className="space-y-4 text-xs tracking-wider uppercase text-zinc-400">
-              <div className="flex justify-between">
-                <span>Active SKUs mapped</span>
-                <span className="text-white font-bold">3 Records</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Global Stock Pool Capacity</span>
-                <span className="text-white font-bold">142 Items</span>
-              </div>
-              <div className="flex justify-between">
-                <span>System Warehouse Operations</span>
-                <span className="text-accent-lime font-bold">
-                  ONLINE STATUS
+            {/* Row 4: Variants (Sizes & Colors) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Sizes
+                </label>
+                <span className="block text-[10px] text-neutral-600 font-mono mb-2">
+                  Separate with commas (S, M, L)
                 </span>
+                <input
+                  type="text"
+                  name="sizes"
+                  value={formData.sizes}
+                  onChange={handleChange}
+                  placeholder="S, M, L, XL"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Colorways
+                </label>
+                <span className="block text-[10px] text-neutral-600 font-mono mb-2">
+                  Separate with commas
+                </span>
+                <input
+                  type="text"
+                  name="colors"
+                  value={formData.colors}
+                  onChange={handleChange}
+                  placeholder="Matte Black, Vintage Grey"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
+                />
               </div>
             </div>
-          </div>
-          <div className="glass-panel p-4 rounded-sm text-[10px] text-zinc-500 uppercase tracking-wide leading-relaxed">
-            💡 <strong>Architecture Note:</strong> When we transition to the
-            backend phase, this dashboard form will direct payloads straight
-            into your live MongoDB Atlas server via specialized Mongoose ODM
-            schema pipelines.
-          </div>
-        </section>
-      </div>
+
+            {/* Row 5: Description */}
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                Product Architectural Description
+              </label>
+              <textarea
+                name="description"
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Describe material compositions, weave patterns, or tailored drop configurations..."
+                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 leading-relaxed resize-none"
+              />
+            </div>
+
+            {/* Action Bar */}
+            <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Status Output Console */}
+              <div className="flex-1 min-w-0">
+                {status.type !== "idle" && (
+                  <p
+                    className={`text-xs font-mono truncate px-3 py-2 rounded border ${
+                      status.type === "loading"
+                        ? "bg-neutral-900 text-neutral-400 border-neutral-800 animate-pulse"
+                        : status.type === "success"
+                          ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"
+                          : "bg-rose-950/30 text-rose-400 border-rose-500/20"
+                    }`}
+                  >
+                    {status.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Submit Trigger */}
+              <button
+                type="submit"
+                disabled={status.type === "loading"}
+                className="sm:w-auto px-6 py-2.5 rounded-lg text-sm font-mono font-bold bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-500 transition-all cursor-pointer shadow-lg active:scale-98 whitespace-nowrap"
+              >
+                COMMIT SKU TO ATLAS
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
