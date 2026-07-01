@@ -1,6 +1,113 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+const initialProducts = [
+  {
+    name: "Studio Oversized Hoodie",
+    price: 96,
+    stock: 18,
+    imageUrl:
+      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
+    category: "Hoodies",
+    description:
+      "A relaxed heavyweight hoodie with a clean architectural silhouette and premium cotton shell.",
+    tag: "NEW",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "Stone"],
+  },
+  {
+    name: "Minimal Tailored Coat",
+    price: 148,
+    stock: 10,
+    imageUrl:
+      "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1000&auto=format&fit=crop",
+    category: "Outerwear",
+    description:
+      "A structured outer layer designed for sharp lines, long drape, and everyday versatility.",
+    tag: "LIMITED",
+    sizes: ["S", "M", "L"],
+    colors: ["Camel", "Charcoal"],
+  },
+  {
+    name: "Utility Denim Jacket",
+    price: 112,
+    stock: 12,
+    imageUrl:
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
+    category: "Jackets",
+    description:
+      "A lightly washed denim jacket with utility pockets and a refined, modern fit.",
+    tag: "ESSENTIAL",
+    sizes: ["M", "L", "XL"],
+    colors: ["Indigo", "Stone"],
+  },
+  {
+    name: "Contour Knit Tee",
+    price: 54,
+    stock: 24,
+    imageUrl:
+      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
+    category: "Tees",
+    description:
+      "A premium knit tee with a sculpted shape and elegant drape for minimal daily wear.",
+    tag: "BESTSELLER",
+    sizes: ["S", "M", "L"],
+    colors: ["Cream", "Black"],
+  },
+  {
+    name: "Sculpted Wool Blazer",
+    price: 176,
+    stock: 8,
+    imageUrl:
+      "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1000&auto=format&fit=crop",
+    category: "Blazers",
+    description:
+      "Sharp tailoring with soft structure and a modern masculine silhouette for elevated dressing.",
+    tag: "EDITOR'S PICK",
+    sizes: ["S", "M", "L"],
+    colors: ["Midnight", "Grey"],
+  },
+  {
+    name: "Soft Tech Jogger",
+    price: 88,
+    stock: 16,
+    imageUrl:
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop",
+    category: "Pants",
+    description:
+      "A streamlined jogger made for movement, comfort, and a polished city-ready look.",
+    tag: "TRENDING",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Graphite", "Olive"],
+  },
+  {
+    name: "Cropped Shell Jacket",
+    price: 124,
+    stock: 11,
+    imageUrl:
+      "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000&auto=format&fit=crop",
+    category: "Outerwear",
+    description:
+      "A weather-ready shell jacket that pairs refined utility details with a sleek cropped fit.",
+    tag: "NEW",
+    sizes: ["S", "M", "L"],
+    colors: ["Sand", "Black"],
+  },
+  {
+    name: "Minimalist Knit Set",
+    price: 132,
+    stock: 9,
+    imageUrl:
+      "https://images.unsplash.com/photo-1487412912498-0447578fcca8?q=80&w=1000&auto=format&fit=crop",
+    category: "Sets",
+    description:
+      "An elevated matching set with relaxed proportions and a soft, textural finish.",
+    tag: "COLLECTION",
+    sizes: ["S", "M", "L"],
+    colors: ["Ivory", "Mushroom"],
+  },
+];
+
 // 1. QUERY: Extract the complete apparel catalog for your storefront grid
 export const listProducts = query({
   args: {},
@@ -23,7 +130,36 @@ export const getProductById = query({
   },
 });
 
-// 3. MUTATION: Provision a fresh apparel item into the store database
+// 3. MUTATION: Seed the catalog with realistic clothing imagery
+export const seedProducts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existingProducts = await ctx.db.query("products").collect();
+
+    if (existingProducts.length > 0) {
+      return {
+        inserted: 0,
+        existing: existingProducts.length,
+        message: "Catalog already populated.",
+      };
+    }
+
+    const insertedIds = [] as string[];
+
+    for (const product of initialProducts) {
+      const insertedId = await ctx.db.insert("products", product);
+      insertedIds.push(insertedId);
+    }
+
+    return {
+      inserted: insertedIds.length,
+      existing: 0,
+      message: "Catalog seeded with realistic clothing imagery.",
+    };
+  },
+});
+
+// 4. MUTATION: Provision a fresh apparel item into the store database
 export const addProduct = mutation({
   args: {
     name: v.string(),
@@ -52,7 +188,7 @@ export const addProduct = mutation({
   },
 });
 
-// 4. MUTATION: Safely patch a product's details or adjust stock values
+// 5. MUTATION: Safely patch a product's details or adjust stock values
 export const updateProduct = mutation({
   args: {
     id: v.id("products"),
@@ -81,7 +217,7 @@ export const updateProduct = mutation({
   },
 });
 
-// 5. MUTATION: Permanently drop a clothing option from your active catalog
+// 6. MUTATION: Permanently drop a clothing option from your active catalog
 export const deleteProduct = mutation({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
