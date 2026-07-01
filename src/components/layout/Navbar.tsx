@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const { getCartCount } = useCart();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="w-full border-b border-white/10 bg-obsidian/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
@@ -31,7 +33,7 @@ export default function Navbar() {
         </div>
 
         {/* Right: Operations */}
-        <div className="flex gap-8">
+        <div className="flex gap-8 items-center">
           <Link
             href="/wishlist"
             className="hover:text-accent-lime transition-colors hidden md:block"
@@ -47,6 +49,21 @@ export default function Navbar() {
               {getCartCount()}
             </span>
           </Link>
+          {user ? (
+            <button
+              onClick={() => signOut()}
+              className="hover:text-accent-lime transition-colors"
+            >
+              Sign out
+            </button>
+          ) : (
+            <Link
+              href="/auth"
+              className="hover:text-accent-lime transition-colors"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </nav>
