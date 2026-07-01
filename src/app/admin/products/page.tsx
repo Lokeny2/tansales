@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
 export default function AdminProductsPage() {
   const [formData, setFormData] = useState({
@@ -13,6 +15,8 @@ export default function AdminProductsPage() {
     sizes: "",
     colors: "",
   });
+
+  const addProduct = useMutation(api.products.addProduct);
 
   const [status, setStatus] = useState<{
     type: "idle" | "loading" | "success" | "error";
@@ -35,9 +39,13 @@ export default function AdminProductsPage() {
       message: "⚡ EXECUTING DB TRANSACTION PIPELINE...",
     });
 
-    // Format fields to match your API requirements
     const payload = {
-      ...formData,
+      name: formData.name,
+      price: Number(formData.price),
+      stock: 0,
+      imageUrl: formData.imageUrl,
+      category: formData.category,
+      tag: formData.tag || "NEW",
       sizes: formData.sizes
         ? formData.sizes.split(",").map((s) => s.trim())
         : [],
@@ -47,21 +55,11 @@ export default function AdminProductsPage() {
     };
 
     try {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to log product entry.");
-      }
+      const productId = await addProduct(payload);
 
       setStatus({
         type: "success",
-        message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${data.id} ]`,
+        message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,
       });
       setFormData({
         name: "",
