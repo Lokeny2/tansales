@@ -9,6 +9,7 @@ export default defineSchema({
     stock: v.number(),
     imageUrl: v.string(),
     category: v.string(),
+    description: v.optional(v.string()),
     tag: v.optional(v.string()),
     sizes: v.optional(v.array(v.string())),
     colors: v.optional(v.array(v.string())),

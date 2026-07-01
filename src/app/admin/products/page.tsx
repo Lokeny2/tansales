@@ -1,8 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
+
+interface ProductRecord {
+  _id: Id<"products">;
+  name: string;
+  price: number;
+  stock: number;
+  imageUrl?: string;
+  category: string;
+  description?: string;
+  tag?: string;
+  sizes?: string[];
+  colors?: string[];
+}
 
 export default function AdminProductsPage() {
   const [formData, setFormData] = useState({
@@ -16,12 +30,32 @@ export default function AdminProductsPage() {
     colors: "",
   });
 
+  const [editingProductId, setEditingProductId] =
+    useState<Id<"products"> | null>(null);
+  const products = useQuery(api.products.listProducts) as
+    ProductRecord[] | undefined;
   const addProduct = useMutation(api.products.addProduct);
+  const updateProduct = useMutation(api.products.updateProduct);
+  const deleteProduct = useMutation(api.products.deleteProduct);
 
   const [status, setStatus] = useState<{
     type: "idle" | "loading" | "success" | "error";
     message: string;
   }>({ type: "idle", message: "" });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      price: "",
+      category: "",
+      tag: "NEW",
+      imageUrl: "",
+      description: "",
+      sizes: "",
+      colors: "",
+    });
+    setEditingProductId(null);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -30,6 +64,39 @@ export default function AdminProductsPage() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const startEditing = (product: ProductRecord) => {
+    setEditingProductId(product._id);
+    setFormData({
+      name: product.name,
+      price: String(product.price),
+      category: product.category,
+      tag: product.tag || "NEW",
+      imageUrl: product.imageUrl || "",
+      description: product.description || "",
+      sizes: product.sizes?.join(", ") || "",
+      colors: product.colors?.join(", ") || "",
+    });
+  };
+
+  const handleDelete = async (productId: Id<"products">) => {
+    try {
+      await deleteProduct({ id: productId });
+      if (editingProductId === productId) {
+        resetForm();
+      }
+      setStatus({
+        type: "success",
+        message: "✅ SKU REMOVED SUCCESSFULLY",
+      });
+    } catch (error: any) {
+      console.error("Product deletion failure:", error);
+      setStatus({
+        type: "error",
+        message: `❌ DELETE EXCEPTION: ${error.message}`,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,9 +109,9 @@ export default function AdminProductsPage() {
     const payload = {
       name: formData.name,
       price: Number(formData.price),
-      stock: 0,
       imageUrl: formData.imageUrl,
       category: formData.category,
+      description: formData.description || undefined,
       tag: formData.tag || "NEW",
       sizes: formData.sizes
         ? formData.sizes.split(",").map((s) => s.trim())
@@ -55,22 +122,20 @@ export default function AdminProductsPage() {
     };
 
     try {
-      const productId = await addProduct(payload);
-
-      setStatus({
-        type: "success",
-        message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,
-      });
-      setFormData({
-        name: "",
-        price: "",
-        category: "",
-        tag: "NEW",
-        imageUrl: "",
-        description: "",
-        sizes: "",
-        colors: "",
-      });
+      if (editingProductId) {
+        await updateProduct({ id: editingProductId, ...payload });
+        setStatus({
+          type: "success",
+          message: `✅ SKU UPDATED SUCCESSFULLY: [ ID: ${editingProductId} ]`,
+        });
+      } else {
+        const productId = await addProduct({ ...payload, stock: 0 });
+        setStatus({
+          type: "success",
+          message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,
+        });
+      }
+      resetForm();
     } catch (error: any) {
       console.error("Database write failure:", error);
       setStatus({
@@ -101,6 +166,62 @@ export default function AdminProductsPage() {
       </header>
 
       <main className="max-w-3xl mx-auto">
+        <div className="mb-8 rounded-2xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">
+                EXISTING SKUS
+              </p>
+              <p className="text-sm text-neutral-400">
+                {products?.length ?? 0} products available in Convex
+              </p>
+            </div>
+            {editingProductId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-mono text-neutral-300"
+              >
+                CANCEL EDIT
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {products?.map((product) => (
+              <div
+                key={product._id}
+                className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {product.name}
+                  </p>
+                  <p className="text-[11px] font-mono text-neutral-500">
+                    {product.category} • stock {product.stock}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEditing(product)}
+                    className="rounded border border-neutral-700 px-2.5 py-1 text-[11px] font-mono text-neutral-300"
+                  >
+                    EDIT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(product._id)}
+                    className="rounded border border-rose-800/50 px-2.5 py-1 text-[11px] font-mono text-rose-300"
+                  >
+                    DELETE
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Glassmorphic Form Card */}
         <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -262,7 +383,9 @@ export default function AdminProductsPage() {
                 disabled={status.type === "loading"}
                 className="sm:w-auto px-6 py-2.5 rounded-lg text-sm font-mono font-bold bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-500 transition-all cursor-pointer shadow-lg active:scale-98 whitespace-nowrap"
               >
-                COMMIT SKU TO ATLAS
+                {editingProductId
+                  ? "UPDATE SKU IN ATLAS"
+                  : "COMMIT SKU TO ATLAS"}
               </button>
             </div>
           </form>
