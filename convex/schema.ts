@@ -15,6 +15,23 @@ export default defineSchema({
     colors: v.optional(v.array(v.string())),
   }),
 
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+    passwordHash: v.string(),
+    role: v.string(),
+    createdAt: v.string(),
+  }).index("by_email", ["email"]),
+
+  sessions: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.string(),
+  })
+    .index("by_token", ["token"])
+    .index("by_userId", ["userId"]),
+
   // Immutable checkout transaction tickets ledger
   orders: defineTable({
     customer: v.object({
