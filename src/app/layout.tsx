@@ -1,27 +1,22 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/layout/Navbar";
-import { CartProvider } from "@/context/CartContext"; // Import provider
-import "./globals.css";
+import "./globals.css"; // Keep your existing global styles import
+import ConvexClientProvider from "./ConvexClientProvider";
 
 export const metadata: Metadata = {
-  title: "Tanite Studio | Essentialized Clothing",
-  description: "High-contrast minimalist clothing retail platform.",
+  title: "Tanite Sales Studio",
+  description: "High-performance clothing commerce engine",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <CartProvider>
-          <Navbar />
-          <main className="min-h-screen">
-            {children}
-          </main>
-        </CartProvider>
+      <body className="antialiased bg-neutral-950 text-neutral-100">
+        {/* Injecting the connection context around the view tree */}
+        <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>
   );
