@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 interface Product {
   _id: string;
@@ -15,35 +17,17 @@ interface Product {
 }
 
 export default function SalesDashboard() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const products = useQuery(api.products.listProducts) as Product[] | undefined;
 
   // Interactive UI States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [cartCount, setCartCount] = useState(0);
 
-  useEffect(() => {
-    async function streamCatalog() {
-      try {
-        const res = await fetch("/api/products");
-        if (!res.ok) throw new Error("Pipeline retrieval failed");
-        const data = await res.json();
-        setProducts(data);
-        setFilteredProducts(data);
-      } catch (error) {
-        console.error("🔴 UI Data Stream Exception:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    streamCatalog();
-  }, []);
+  const catalog = products ?? [];
 
-  // Live client-side processing pipeline
-  useEffect(() => {
-    let result = products;
+  const filteredProducts = useMemo(() => {
+    let result = catalog;
 
     if (selectedCategory !== "ALL") {
       result = result.filter(
@@ -57,15 +41,18 @@ export default function SalesDashboard() {
       );
     }
 
-    setFilteredProducts(result);
-  }, [searchQuery, selectedCategory, products]);
+    return result;
+  }, [catalog, searchQuery, selectedCategory]);
 
-  const categories = [
-    "ALL",
-    ...Array.from(new Set(products.map((p) => p.category.toUpperCase()))),
-  ];
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(
+      new Set(catalog.map((p) => p.category.toUpperCase())),
+    );
 
-  if (loading) {
+    return ["ALL", ...uniqueCategories];
+  }, [catalog]);
+
+  if (products === undefined) {
     return (
       <div className="min-h-screen bg-neutral-950 text-emerald-400 flex flex-col items-center justify-center font-mono gap-3">
         <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
