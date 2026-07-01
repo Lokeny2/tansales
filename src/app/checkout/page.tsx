@@ -3,10 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useMutation } from "convex/react";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
 import { useCart } from "@/context/CartContext";
 
 export default function CheckoutPage() {
   const { cart, getCartTotal, getCartCount } = useCart();
+  const placeOrder = useMutation(api.orders.placeOrder);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,33 +38,21 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      await placeOrder({
+        customer: {
+          fullName: formData.fullName,
+          email: formData.email,
+          street: formData.street,
+          city: formData.city,
         },
-        body: JSON.stringify({
-          customer: {
-            fullName: formData.fullName,
-            email: formData.email,
-            street: formData.street,
-            city: formData.city,
-          },
-          items: cart,
-          total: getCartTotal(),
-        }),
+        items: cart.map((item) => ({
+          id: item.id as Id<"products">,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+        })),
       });
 
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          responseData.error ||
-            "Failed to finalize database order record entry.",
-        );
-      }
-
-      // Transition screen state to complete success presentation mode
       setIsSuccess(true);
     } catch (error: any) {
       console.error("Checkout validation operation exception error:", error);
