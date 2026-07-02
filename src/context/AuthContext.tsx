@@ -17,12 +17,12 @@ type AuthContextValue = {
   signIn: (
     email: string,
     password: string,
-  ) => Promise<{ ok: boolean; message: string }>;
+  ) => Promise<{ ok: boolean; message: string; token?: string }>;
   signUp: (
     name: string,
     email: string,
     password: string,
-  ) => Promise<{ ok: boolean; message: string }>;
+  ) => Promise<{ ok: boolean; message: string; token?: string }>;
   signOut: () => Promise<void>;
 };
 
@@ -31,6 +31,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const signInMutation = useMutation(api.auth.signIn);
   const signUpMutation = useMutation(api.auth.signUp);
   const signOutMutation = useMutation(api.auth.signOut);
@@ -46,8 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const parsed = JSON.parse(storedSession) as { user: AuthUser };
+      const parsed = JSON.parse(storedSession) as {
+        user: AuthUser;
+        token?: string;
+      };
       setUser(parsed.user);
+      setSessionToken(parsed.token ?? null);
     } catch {
       localStorage.removeItem("tansales-session");
     } finally {
@@ -55,17 +60,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const persistSession = (nextUser: AuthUser, nextToken: string) => {
+    localStorage.setItem(
+      "tansales-session",
+      JSON.stringify({ user: nextUser, token: nextToken }),
+    );
+    setUser(nextUser);
+    setSessionToken(nextToken);
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem("tansales-session");
+    setUser(null);
+    setSessionToken(null);
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       const result = await signInMutation({ email, password });
-      if (result.ok && result.user) {
-        localStorage.setItem(
-          "tansales-session",
-          JSON.stringify({ user: result.user }),
-        );
-        setUser(result.user);
+      if (result.ok && result.user && result.token) {
+        persistSession(result.user, result.token);
       }
-      return { ok: result.ok, message: result.message };
+      return {
+        ok: result.ok,
+        message: result.message,
+        token: result.token,
+      };
     } catch (error) {
       return {
         ok: false,
@@ -77,14 +97,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (name: string, email: string, password: string) => {
     try {
       const result = await signUpMutation({ name, email, password });
-      if (result.ok && result.user) {
-        localStorage.setItem(
-          "tansales-session",
-          JSON.stringify({ user: result.user }),
-        );
-        setUser(result.user);
+      if (result.ok && result.user && result.token) {
+        persistSession(result.user, result.token);
       }
-      return { ok: result.ok, message: result.message };
+      return {
+        ok: result.ok,
+        message: result.message,
+        token: result.token,
+      };
     } catch (error) {
       return {
         ok: false,
@@ -95,9 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await signOutMutation({});
-    localStorage.removeItem("tansales-session");
-    setUser(null);
+    if (sessionToken) {
+      try {
+        await signOutMutation({ token: sessionToken });
+      } catch {
+        // Ignore cleanup errors and clear the client session anyway.
+      }
+    }
+    clearSession();
   };
 
   const value = useMemo<AuthContextValue>(

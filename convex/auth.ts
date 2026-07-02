@@ -45,6 +45,7 @@ export const signUp = mutation({
     return {
       ok: true,
       message: "Account created successfully.",
+      token,
       user: {
         id: userId,
         name: args.name,
@@ -82,6 +83,7 @@ export const signIn = mutation({
     return {
       ok: true,
       message: "Signed in successfully.",
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -93,15 +95,56 @@ export const signIn = mutation({
 });
 
 export const signOut = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!args.token) {
+      return { ok: true, message: "Signed out." };
+    }
+
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique()
+      .catch(() => null);
+
+    if (session) {
+      await ctx.db.delete(session._id);
+    }
+
     return { ok: true, message: "Signed out." };
   },
 });
 
 export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    return null;
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique()
+      .catch(() => null);
+
+    if (!session || session.expiresAt <= Date.now()) {
+      if (session) {
+        await ctx.db.delete(session._id);
+      }
+      return null;
+    }
+
+    const user = await ctx.db.get("users", session.userId);
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
   },
 });

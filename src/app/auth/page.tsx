@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AuthPage() {
@@ -11,7 +12,14 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const router = useRouter();
+  const { user, signIn, signUp } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/products");
+    }
+  }, [router, user]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -25,6 +33,10 @@ export default function AuthPage() {
 
     setMessage(result.message);
     setIsSubmitting(false);
+
+    if (result.ok) {
+      router.push("/products");
+    }
   };
 
   return (
