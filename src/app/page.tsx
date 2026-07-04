@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts } from "@/lib/products";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
-// Static Editorial Collections Data
+// Static Editorial Collections Data (unchanged — just visual UI copy)
 const CATEGORIES = [
   {
     name: "Tees",
@@ -13,9 +16,9 @@ const CATEGORIES = [
   { name: "Outerwear", count: "6 Items", colorSwatch: ["#111827", "#D1D5DB"] },
 ];
 
-export default async function HomePage() {
-  // Asynchronously fetch products from our mock Data Access Layer
-  const products = await getProducts();
+export default function HomePage() {
+  // Pull the real, live catalog from Convex — same source as everywhere else now
+  const products = useQuery(api.products.listProducts);
 
   return (
     <div className="max-w-7xl mx-auto px-6 pb-24">
@@ -37,7 +40,6 @@ export default async function HomePage() {
 
       {/* 2. Editorial Highlight and Category Blocks */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-12 items-stretch">
-        {/* Visual Focal Point Card */}
         <div className="lg:col-span-2 min-h-[350px] bg-gradient-to-br from-neutral-900 via-zinc-800 to-neutral-950 rounded-sm relative p-8 flex flex-col justify-end overflow-hidden group border border-white/10">
           <div className="absolute inset-0 bg-accent-cyan/5 opacity-40 group-hover:opacity-20 transition-opacity" />
           <div className="relative z-10 flex justify-between items-end w-full">
@@ -55,7 +57,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Quick Category Navigation Stack */}
         <div className="flex flex-col justify-between gap-4">
           {CATEGORIES.map((cat) => (
             <div
@@ -82,7 +83,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 3. Operational Filter Strip */}
+      {/* 3. Operational Filter Strip (visual only, unchanged) */}
       <section className="border-t border-b border-white/10 py-4 flex justify-between items-center text-xs tracking-widest uppercase font-medium">
         <div className="flex gap-6 text-gray-400">
           <span>Filter by:</span>
@@ -101,43 +102,51 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 4. Product Catalog Grid */}
+      {/* 4. Product Catalog Grid — now backed by real Convex data */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 py-12">
-        {products.map((product) => (
-          <Link
-            href={`/products/${product.id}`}
-            key={product.id}
-            className="group flex flex-col gap-4"
-          >
-            {/* Optimized Next.js Image Container */}
-            <div className="aspect-[3/4] bg-zinc-950 rounded-sm relative flex items-center justify-center border border-white/5 overflow-hidden">
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                priority={product.id === "1"}
-                className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-              />
-              <span className="absolute top-4 left-4 bg-obsidian/80 backdrop-blur-md px-2 py-1 text-[9px] font-bold tracking-wider uppercase rounded-sm border border-white/10 z-10">
-                {product.tag}
-              </span>
-            </div>
+        {products === undefined ? (
+          <p className="col-span-full text-center text-neutral-500 font-mono text-xs uppercase tracking-widest py-12">
+            Loading catalog...
+          </p>
+        ) : (
+          products.map((product, index) => (
+            <Link
+              href={`/products/${product._id}`}
+              key={product._id}
+              className="group flex flex-col gap-4"
+            >
+              <div className="aspect-[3/4] bg-zinc-950 rounded-sm relative flex items-center justify-center border border-white/5 overflow-hidden">
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={index === 0}
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                {product.tag && (
+                  <span className="absolute top-4 left-4 bg-obsidian/80 backdrop-blur-md px-2 py-1 text-[9px] font-bold tracking-wider uppercase rounded-sm border border-white/10 z-10">
+                    {product.tag}
+                  </span>
+                )}
+              </div>
 
-            {/* Product Meta Text */}
-            <div className="flex justify-between items-start text-xs tracking-wider uppercase">
-              <div className="flex flex-col gap-1 max-w-[75%]">
-                <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
-                  {product.name}
-                </h4>
-                <span className="text-[10px] text-gray-500">
-                  Tanite Essentials
+              <div className="flex justify-between items-start text-xs tracking-wider uppercase">
+                <div className="flex flex-col gap-1 max-w-[75%]">
+                  <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
+                    {product.name}
+                  </h4>
+                  <span className="text-[10px] text-gray-500">
+                    Tanite Essentials
+                  </span>
+                </div>
+                <span className="font-semibold text-white">
+                  ${product.price.toFixed(2)}
                 </span>
               </div>
-              <span className="font-semibold text-white">{product.price}</span>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))
+        )}
       </section>
     </div>
   );
