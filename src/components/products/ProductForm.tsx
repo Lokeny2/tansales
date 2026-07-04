@@ -2,60 +2,57 @@
 
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { Product } from "@/lib/products";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface ProductFormProps {
-  product: Product;
+  product: Doc<"products">;
 }
 
 export default function ProductForm({ product }: ProductFormProps) {
   const { addToCart } = useCart();
-  
-  // Track selected attributes
+
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [isAdding, setIsAdding] = useState(false);
 
-  // Parse string price (e.g., "$30.0") to a pure calculation number for the cart engine
-  const numericPrice = parseFloat(product.price.replace("$", ""));
+  const sizes = product.sizes ?? [];
+  const colors = product.colors ?? [];
 
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) return;
 
     setIsAdding(true);
 
-    // Simulate a brief 500ms micro-animation delay
     setTimeout(() => {
       addToCart(
         {
-          id: product.id,
+          id: product._id,
           name: product.name,
-          price: numericPrice,
+          price: product.price,
           size: selectedSize,
           color: selectedColor,
           imageUrl: product.imageUrl,
         },
-        1 // Default quantity increment
+        1,
       );
-      
+
       setIsAdding(false);
     }, 500);
   };
 
-  // Button verification guards
   const isButtonDisabled = !selectedSize || !selectedColor || isAdding;
 
   return (
     <div className="flex flex-col gap-8">
-      
-      {/* Sizing Selector Chips Section */}
       <div>
         <div className="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-widest">
           <span className="text-gray-400">Select Size</span>
-          <span className="text-zinc-500 underline cursor-pointer hover:text-white transition-colors">Size Guide</span>
+          <span className="text-zinc-500 underline cursor-pointer hover:text-white transition-colors">
+            Size Guide
+          </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {product.sizes.map((size) => {
+          {sizes.map((size) => {
             const isSelected = selectedSize === size;
             return (
               <button
@@ -75,11 +72,12 @@ export default function ProductForm({ product }: ProductFormProps) {
         </div>
       </div>
 
-      {/* Color Palette Choice Section */}
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Colorway</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+          Colorway
+        </h3>
         <div className="flex flex-wrap gap-3">
-          {product.colors.map((color) => {
+          {colors.map((color) => {
             const isSelected = selectedColor === color;
             return (
               <button
@@ -99,7 +97,6 @@ export default function ProductForm({ product }: ProductFormProps) {
         </div>
       </div>
 
-      {/* Call To Action Button with contextual styling hooks */}
       <button
         type="button"
         disabled={isButtonDisabled}
@@ -108,16 +105,16 @@ export default function ProductForm({ product }: ProductFormProps) {
           !selectedSize || !selectedColor
             ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5"
             : isAdding
-            ? "bg-accent-cyan text-white animate-pulse"
-            : "bg-white text-obsidian hover:bg-accent-lime hover:text-white cursor-pointer"
+              ? "bg-accent-cyan text-white animate-pulse"
+              : "bg-white text-obsidian hover:bg-accent-lime hover:text-white cursor-pointer"
         }`}
       >
         {!selectedSize || !selectedColor
           ? "Select Size & Colorway"
           : isAdding
-          ? "Adding to Cart..."
-          : "Add To Cart"}
+            ? "Adding to Cart..."
+            : "Add To Cart"}
       </button>
     </div>
-   );
+  );
 }
