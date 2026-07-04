@@ -120,13 +120,7 @@ export const listProducts = query({
 export const getProductById = query({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
-    const product = await ctx.db.get(args.id);
-    if (!product) {
-      throw new Error(
-        `SKU_NOT_FOUND: Item reference [${args.id}] does not exist.`,
-      );
-    }
-    return product;
+    return await ctx.db.get(args.id);
   },
 });
 
