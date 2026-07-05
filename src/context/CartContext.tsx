@@ -58,11 +58,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (existingItemIndex > -1) {
-        // Increment quantity of existing match
-        const updatedCart = [...prevCart];
-        updatedCart[existingItemIndex].quantity += quantity;
-        return updatedCart;
-      }
+  const updatedCart = [...prevCart];
+  updatedCart[existingItemIndex] = {
+    ...updatedCart[existingItemIndex],
+    quantity: updatedCart[existingItemIndex].quantity + quantity,
+  };
+  return updatedCart;
+}
 
       // Add a brand new item variant row
       return [...prevCart, { ...newItem, quantity }];
