@@ -1,9 +1,21 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import crypto from "crypto";
+import { getSessionUser } from "./authHelpers";
 
-function hashPassword(password: string) {
-  return crypto.createHash("sha256").update(password).digest("hex");
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function generateToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export const signUp = mutation({
@@ -29,12 +41,12 @@ export const signUp = mutation({
     const userId = await ctx.db.insert("users", {
       name: args.name,
       email: args.email,
-      passwordHash: hashPassword(args.password),
+      passwordHash: await hashPassword(args.password),
       role: "customer",
       createdAt: new Date().toISOString(),
     });
 
-    const token = crypto.randomBytes(24).toString("hex");
+    const token = generateToken();
     await ctx.db.insert("sessions", {
       userId,
       token,
@@ -68,11 +80,13 @@ export const signIn = mutation({
       .unique()
       .catch(() => null);
 
-    if (!user || user.passwordHash !== hashPassword(args.password)) {
+    const hashedAttempt = await hashPassword(args.password);
+
+    if (!user || user.passwordHash !== hashedAttempt) {
       return { ok: false, message: "Invalid email or password." };
     }
 
-    const token = crypto.randomBytes(24).toString("hex");
+    const token = generateToken();
     await ctx.db.insert("sessions", {
       userId: user._id,
       token,
@@ -95,14 +109,8 @@ export const signIn = mutation({
 });
 
 export const signOut = mutation({
-  args: {
-    token: v.optional(v.string()),
-  },
+  args: { token: v.string() },
   handler: async (ctx, args) => {
-    if (!args.token) {
-      return { ok: true, message: "Signed out." };
-    }
-
     const session = await ctx.db
       .query("sessions")
       .withIndex("by_token", (q) => q.eq("token", args.token))
@@ -118,28 +126,10 @@ export const signOut = mutation({
 });
 
 export const getCurrentUser = query({
-  args: {
-    token: v.string(),
-  },
+  args: { token: v.string() },
   handler: async (ctx, args) => {
-    const session = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
-      .unique()
-      .catch(() => null);
-
-    if (!session || session.expiresAt <= Date.now()) {
-      if (session) {
-        await ctx.db.delete(session._id);
-      }
-      return null;
-    }
-
-    const user = await ctx.db.get("users", session.userId);
-    if (!user) {
-      return null;
-    }
-
+    const user = await getSessionUser(ctx, args.token);
+    if (!user) return null;
     return {
       id: user._id,
       name: user.name,
