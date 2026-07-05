@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProductRecord {
   _id: Id<"products">;
@@ -32,6 +33,7 @@ export default function AdminProductsPage() {
 
   const [editingProductId, setEditingProductId] =
     useState<Id<"products"> | null>(null);
+  const { token } = useAuth();
   const products = useQuery(api.products.listProducts) as
     ProductRecord[] | undefined;
   const addProduct = useMutation(api.products.addProduct);
@@ -81,8 +83,16 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = async (productId: Id<"products">) => {
+    if (!token) {
+      setStatus({
+        type: "error",
+        message: "❌ AUTH REQUIRED: PLEASE SIGN IN TO MANAGE PRODUCTS.",
+      });
+      return;
+    }
+
     try {
-      await deleteProduct({ id: productId });
+      await deleteProduct({ id: productId, token });
       if (editingProductId === productId) {
         resetForm();
       }
@@ -121,15 +131,23 @@ export default function AdminProductsPage() {
         : [],
     };
 
+    if (!token) {
+      setStatus({
+        type: "error",
+        message: "❌ AUTH REQUIRED: PLEASE SIGN IN TO MANAGE PRODUCTS.",
+      });
+      return;
+    }
+
     try {
       if (editingProductId) {
-        await updateProduct({ id: editingProductId, ...payload });
+        await updateProduct({ id: editingProductId, token, ...payload });
         setStatus({
           type: "success",
           message: `✅ SKU UPDATED SUCCESSFULLY: [ ID: ${editingProductId} ]`,
         });
       } else {
-        const productId = await addProduct({ ...payload, stock: 0 });
+        const productId = await addProduct({ token, ...payload, stock: 0 });
         setStatus({
           type: "success",
           message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,

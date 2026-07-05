@@ -13,6 +13,7 @@ type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser | null;
+  token: string | null;
   isLoading: boolean;
   signIn: (
     email: string,
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const signInMutation = useMutation(api.auth.signIn);
   const signUpMutation = useMutation(api.auth.signUp);
@@ -46,8 +48,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const parsed = JSON.parse(storedSession) as { user: AuthUser };
-      setUser(parsed.user);
+      const parsed = JSON.parse(storedSession) as {
+        user?: AuthUser;
+        token?: string | null;
+      };
+      if (parsed.user) {
+        setUser(parsed.user);
+      }
+      setToken(parsed.token ?? null);
     } catch {
       localStorage.removeItem("tansales-session");
     } finally {
@@ -95,14 +103,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await signOutMutation({});
+    await signOutMutation({ token: token ?? "" });
     localStorage.removeItem("tansales-session");
     setUser(null);
+    setToken(null);
   };
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isLoading, signIn, signUp, signOut }),
-    [user, isLoading, signIn, signUp, signOut],
+    () => ({ user, token, isLoading, signIn, signUp, signOut }),
+    [user, token, isLoading, signIn, signUp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
