@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./authHelpers";
 
 const initialProducts = [
   {
@@ -109,6 +110,7 @@ const initialProducts = [
 ];
 
 // 1. QUERY: Extract the complete apparel catalog for your storefront grid
+// (No lock needed — everyone should be able to browse the public catalog.)
 export const listProducts = query({
   args: {},
   handler: async (ctx) => {
@@ -117,6 +119,7 @@ export const listProducts = query({
 });
 
 // 2. QUERY: Extract a single garment record using its type-safe Convex ID
+// (No lock needed — viewing one product is just as public as browsing all of them.)
 export const getProductById = query({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
@@ -125,6 +128,8 @@ export const getProductById = query({
 });
 
 // 3. MUTATION: Seed the catalog with realistic clothing imagery
+// (Left unlocked deliberately — it's already self-guarded: it only ever
+// inserts data once, when the table is empty, so it's harmless either way.)
 export const seedProducts = mutation({
   args: {},
   handler: async (ctx) => {
@@ -154,8 +159,10 @@ export const seedProducts = mutation({
 });
 
 // 4. MUTATION: Provision a fresh apparel item into the store database
+// 🔒 Admin-only from here down — this changes real store data.
 export const addProduct = mutation({
   args: {
+    token: v.string(),
     name: v.string(),
     price: v.number(),
     stock: v.number(),
@@ -167,6 +174,8 @@ export const addProduct = mutation({
     colors: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.token);
+
     const productId = await ctx.db.insert("products", {
       name: args.name,
       price: args.price,
@@ -183,9 +192,11 @@ export const addProduct = mutation({
 });
 
 // 5. MUTATION: Safely patch a product's details or adjust stock values
+// 🔒 Admin-only.
 export const updateProduct = mutation({
   args: {
     id: v.id("products"),
+    token: v.string(),
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     stock: v.optional(v.number()),
@@ -197,7 +208,9 @@ export const updateProduct = mutation({
     colors: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const { id, ...updates } = args;
+    await requireAdmin(ctx, args.token);
+
+    const { id, token, ...updates } = args;
 
     const existing = await ctx.db.get(id);
     if (!existing) {
@@ -212,9 +225,12 @@ export const updateProduct = mutation({
 });
 
 // 6. MUTATION: Permanently drop a clothing option from your active catalog
+// 🔒 Admin-only.
 export const deleteProduct = mutation({
-  args: { id: v.id("products") },
+  args: { id: v.id("products"), token: v.string() },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.token);
+
     const existing = await ctx.db.get(args.id);
     if (!existing) {
       throw new Error(
