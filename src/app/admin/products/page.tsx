@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
+import AdminGuard from "@/components/auth/AdminGuard";
 import { useAuth } from "@/context/AuthContext";
 
 interface ProductRecord {
@@ -19,7 +20,9 @@ interface ProductRecord {
   colors?: string[];
 }
 
-export default function AdminProductsPage() {
+function AdminProductsContent() {
+  const { token } = useAuth();
+
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -33,7 +36,6 @@ export default function AdminProductsPage() {
 
   const [editingProductId, setEditingProductId] =
     useState<Id<"products"> | null>(null);
-  const { token } = useAuth();
   const products = useQuery(api.products.listProducts) as
     ProductRecord[] | undefined;
   const addProduct = useMutation(api.products.addProduct);
@@ -59,14 +61,12 @@ export default function AdminProductsPage() {
     setEditingProductId(null);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  }
 
   const startEditing = (product: ProductRecord) => {
     setEditingProductId(product._id);
@@ -83,14 +83,7 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = async (productId: Id<"products">) => {
-    if (!token) {
-      setStatus({
-        type: "error",
-        message: "❌ AUTH REQUIRED: PLEASE SIGN IN TO MANAGE PRODUCTS.",
-      });
-      return;
-    }
-
+    if (!token) return;
     try {
       await deleteProduct({ id: productId, token });
       if (editingProductId === productId) {
@@ -98,22 +91,31 @@ export default function AdminProductsPage() {
       }
       setStatus({
         type: "success",
-        message: "✅ SKU REMOVED SUCCESSFULLY",
+        message: "SKU REMOVED SUCCESSFULLY",
       });
     } catch (error: any) {
       console.error("Product deletion failure:", error);
       setStatus({
         type: "error",
-        message: `❌ DELETE EXCEPTION: ${error.message}`,
+        message: `DELETE EXCEPTION: ${error.message}`,
       });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!token) {
+      setStatus({
+        type: "error",
+        message: "NO ACTIVE SESSION - please sign in again.",
+      });
+      return;
+    }
+
     setStatus({
       type: "loading",
-      message: "⚡ EXECUTING DB TRANSACTION PIPELINE...",
+      message: "EXECUTING DB TRANSACTION PIPELINE...",
     });
 
     const payload = {
@@ -131,26 +133,18 @@ export default function AdminProductsPage() {
         : [],
     };
 
-    if (!token) {
-      setStatus({
-        type: "error",
-        message: "❌ AUTH REQUIRED: PLEASE SIGN IN TO MANAGE PRODUCTS.",
-      });
-      return;
-    }
-
     try {
       if (editingProductId) {
         await updateProduct({ id: editingProductId, token, ...payload });
         setStatus({
           type: "success",
-          message: `✅ SKU UPDATED SUCCESSFULLY: [ ID: ${editingProductId} ]`,
+          message: `SKU UPDATED SUCCESSFULLY: [ ID: ${editingProductId} ]`,
         });
       } else {
-        const productId = await addProduct({ token, ...payload, stock: 0 });
+        const productId = await addProduct({ ...payload, stock: 0, token });
         setStatus({
           type: "success",
-          message: `✅ SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,
+          message: `SKU LOGGED SUCCESSFULLY: [ ID: ${productId} ]`,
         });
       }
       resetForm();
@@ -158,14 +152,13 @@ export default function AdminProductsPage() {
       console.error("Database write failure:", error);
       setStatus({
         type: "error",
-        message: `❌ PIPELINE EXCEPTION: ${error.message}`,
+        message: `PIPELINE EXCEPTION: ${error.message}`,
       });
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 selection:bg-emerald-500/30 font-sans">
-      {/* Structural Header */}
+    <><div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 selection:bg-emerald-500/30 font-sans">
       <header className="max-w-3xl mx-auto mb-10 flex justify-between items-end border-b border-neutral-800 pb-6">
         <div>
           <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-neutral-100 to-neutral-500 bg-clip-text text-transparent">
@@ -175,15 +168,13 @@ export default function AdminProductsPage() {
             [ inventory_provisioning_pipeline.v1 ]
           </p>
         </div>
-        <a
-          href="/products"
-          className="text-xs font-mono text-neutral-400 hover:text-white border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 rounded-md transition-colors"
-        >
-          ← VIEW LIVE CATALOG
-        </a>
-      </header>
 
-      <main className="max-w-3xl mx-auto">
+        <a href="/products"
+        className="text-xs font-mono text-neutral-400 hover:text-white border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 rounded-md transition-colors"
+        >
+        VIEW LIVE CATALOG
+      </a>
+    </header><main className="max-w-3xl mx-auto">
         <div className="mb-8 rounded-2xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -216,7 +207,7 @@ export default function AdminProductsPage() {
                     {product.name}
                   </p>
                   <p className="text-[11px] font-mono text-neutral-500">
-                    {product.category} • stock {product.stock}
+                    {product.category} - stock {product.stock}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -240,10 +231,8 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        {/* Glassmorphic Form Card */}
         <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Row 1: Name and Price */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -256,8 +245,7 @@ export default function AdminProductsPage() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="e.g., Minimalist Kuro Hoodie"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
-                />
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -271,12 +259,10 @@ export default function AdminProductsPage() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
-                />
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
               </div>
             </div>
 
-            {/* Row 2: Category and Tag */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -289,8 +275,7 @@ export default function AdminProductsPage() {
                   value={formData.category}
                   onChange={handleChange}
                   placeholder="outerwear, pants, shirts"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
-                />
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -310,7 +295,6 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            {/* Row 3: Image URL */}
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
                 Image Resource URL
@@ -321,11 +305,9 @@ export default function AdminProductsPage() {
                 value={formData.imageUrl}
                 onChange={handleChange}
                 placeholder="https://images.unsplash.com/photo-..."
-                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono"
-              />
+                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
             </div>
 
-            {/* Row 4: Variants (Sizes & Colors) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-1">
@@ -340,8 +322,7 @@ export default function AdminProductsPage() {
                   value={formData.sizes}
                   onChange={handleChange}
                   placeholder="S, M, L, XL"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono"
-                />
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-1">
@@ -356,12 +337,10 @@ export default function AdminProductsPage() {
                   value={formData.colors}
                   onChange={handleChange}
                   placeholder="Matte Black, Vintage Grey"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600"
-                />
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
               </div>
             </div>
 
-            {/* Row 5: Description */}
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
                 Product Architectural Description
@@ -372,30 +351,24 @@ export default function AdminProductsPage() {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Describe material compositions, weave patterns, or tailored drop configurations..."
-                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 leading-relaxed resize-none"
-              />
+                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 leading-relaxed resize-none" />
             </div>
 
-            {/* Action Bar */}
             <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              {/* Status Output Console */}
               <div className="flex-1 min-w-0">
                 {status.type !== "idle" && (
                   <p
-                    className={`text-xs font-mono truncate px-3 py-2 rounded border ${
-                      status.type === "loading"
+                    className={`text-xs font-mono truncate px-3 py-2 rounded border ${status.type === "loading"
                         ? "bg-neutral-900 text-neutral-400 border-neutral-800 animate-pulse"
                         : status.type === "success"
                           ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"
-                          : "bg-rose-950/30 text-rose-400 border-rose-500/20"
-                    }`}
+                          : "bg-rose-950/30 text-rose-400 border-rose-500/20"}`}
                   >
                     {status.message}
                   </p>
                 )}
               </div>
 
-              {/* Submit Trigger */}
               <button
                 type="submit"
                 disabled={status.type === "loading"}
@@ -409,6 +382,15 @@ export default function AdminProductsPage() {
           </form>
         </div>
       </main>
-    </div>
+      </div>
+      </>
+  );
+}
+
+export default function AdminProductsPage() {
+  return (
+    <AdminGuard>
+      <AdminProductsContent />
+    </AdminGuard>
   );
 }
