@@ -1,7 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./authHelpers";
 
 // 1. MUTATION: Process atomic transactions and handle stock deductions
+// (No lock needed — any customer should be able to place their own order.
+// This is the "checkout counter," open to everyone.)
 export const placeOrder = mutation({
   args: {
     customer: v.object({
@@ -67,9 +70,12 @@ export const placeOrder = mutation({
 });
 
 // 2. QUERY: Live stream provider required by the Admin Panel UI layout
+// 🔒 Admin-only — this exposes every customer's name, email, and address,
+// so only a verified admin token should ever be able to call it.
 export const getOrdersLog = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.token);
     return await ctx.db.query("orders").order("desc").collect();
   },
 });
