@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 type AuthUser = {
@@ -30,48 +30,53 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedToken, setHasLoadedToken] = useState(false);
+
   const signInMutation = useMutation(api.auth.signIn);
   const signUpMutation = useMutation(api.auth.signUp);
   const signOutMutation = useMutation(api.auth.signOut);
 
+  // On first load, pick up whatever token (if any) was saved from a
+  // previous visit. This is just "do we have a badge number at all?" —
+  // it does NOT mean that badge is still valid; that gets checked next.
   useEffect(() => {
-    const storedSession =
+    const storedToken =
       typeof window !== "undefined"
-        ? localStorage.getItem("tansales-session")
+        ? localStorage.getItem("tansales-token")
         : null;
-    if (!storedSession) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(storedSession) as {
-        user?: AuthUser;
-        token?: string | null;
-      };
-      if (parsed.user) {
-        setUser(parsed.user);
-      }
-      setToken(parsed.token ?? null);
-    } catch {
-      localStorage.removeItem("tansales-session");
-    } finally {
-      setIsLoading(false);
-    }
+    setToken(storedToken);
+    setHasLoadedToken(true);
   }, []);
+
+  // The real check: ask Convex directly who (if anyone) this token
+  // actually belongs to. This is the part that can't be faked by
+  // editing localStorage — the server is the one deciding the answer.
+  const verifiedUser = useQuery(
+    api.auth.getCurrentUser,
+    token ? { token } : "skip",
+  );
+
+  const isLoading =
+    !hasLoadedToken || (token !== null && verifiedUser === undefined);
+  const user = verifiedUser ?? null;
+
+  // If the server says a saved token is no longer valid (expired, or
+  // just doesn't exist), clean it up automatically instead of leaving
+  // the app stuck thinking someone's logged in when they aren't.
+  useEffect(() => {
+    if (hasLoadedToken && token && verifiedUser === null) {
+      localStorage.removeItem("tansales-token");
+      setToken(null);
+    }
+  }, [hasLoadedToken, token, verifiedUser]);
 
   const signIn = async (email: string, password: string) => {
     try {
       const result = await signInMutation({ email, password });
-      if (result.ok && result.user) {
-        localStorage.setItem(
-          "tansales-session",
-          JSON.stringify({ user: result.user }),
-        );
-        setUser(result.user);
+      if (result.ok && result.token) {
+        localStorage.setItem("tansales-token", result.token);
+        setToken(result.token);
       }
       return { ok: result.ok, message: result.message };
     } catch (error) {
@@ -85,12 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (name: string, email: string, password: string) => {
     try {
       const result = await signUpMutation({ name, email, password });
-      if (result.ok && result.user) {
-        localStorage.setItem(
-          "tansales-session",
-          JSON.stringify({ user: result.user }),
-        );
-        setUser(result.user);
+      if (result.ok && result.token) {
+        localStorage.setItem("tansales-token", result.token);
+        setToken(result.token);
       }
       return { ok: result.ok, message: result.message };
     } catch (error) {
@@ -103,15 +105,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await signOutMutation({ token: token ?? "" });
-    localStorage.removeItem("tansales-session");
-    setUser(null);
+    if (token) {
+      await signOutMutation({ token });
+    }
+    localStorage.removeItem("tansales-token");
     setToken(null);
   };
 
   const value = useMemo<AuthContextValue>(
     () => ({ user, token, isLoading, signIn, signUp, signOut }),
-    [user, token, isLoading, signIn, signUp, signOut],
+    [user, token, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
