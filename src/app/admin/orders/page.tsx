@@ -2,10 +2,19 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import AdminGuard from "@/components/auth/AdminGuard";
+import { useAuth } from "@/context/AuthContext";
 
-export default function AdminOrdersPage() {
-  // Pull live data stream using the newly exposed query function
-  const orders = useQuery(api.orders.getOrdersLog);
+function AdminOrdersContent() {
+  const { token } = useAuth();
+
+  // Pull live data stream using the newly exposed query function.
+  // "skip" tells Convex not to run the query at all until we actually
+  // have a token to send — avoids a brief, pointless failed request.
+  const orders = useQuery(
+    api.orders.getOrdersLog,
+    token ? { token } : "skip",
+  );
 
   // Loading framework matching client-side handshake state
   if (orders === undefined) {
@@ -31,7 +40,7 @@ export default function AdminOrdersPage() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 sm:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
-        
+
         <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-neutral-800 pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-emerald-400 font-mono">TANITE-POS LEDGER</h1>
@@ -50,8 +59,8 @@ export default function AdminOrdersPage() {
             const standardDate = order.createdAt ? order.createdAt.split("T")[0] : "PENDING";
 
             return (
-              <div 
-                key={order._id} 
+              <div
+                key={order._id}
                 className="bg-neutral-900/30 backdrop-blur-md border border-neutral-800/80 p-5 sm:p-6 rounded-xl"
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 pb-4 border-b border-neutral-800/40">
@@ -63,7 +72,7 @@ export default function AdminOrdersPage() {
                     <h3 className="text-lg font-semibold mt-1.5 text-neutral-200">{order.customer.fullName}</h3>
                     <p className="text-xs font-mono text-neutral-400">{order.customer.email}</p>
                   </div>
-                  
+
                   <div className="sm:text-right flex sm:flex-col justify-between sm:justify-start w-full sm:w-auto items-center sm:items-end gap-1">
                     <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">
                       {standardDate}
@@ -80,8 +89,8 @@ export default function AdminOrdersPage() {
                   </p>
                   <div className="space-y-2">
                     {order.items.map((item, index) => (
-                      <div 
-                        key={`${order._id}-item-${index}`} 
+                      <div
+                        key={`${order._id}-item-${index}`}
                         className="flex justify-between items-start text-sm font-mono"
                       >
                         <div className="text-neutral-300">
@@ -113,5 +122,13 @@ export default function AdminOrdersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <AdminGuard>
+      <AdminOrdersContent />
+    </AdminGuard>
   );
 }
