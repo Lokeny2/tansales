@@ -1,5 +1,6 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireAdmin } from "./authHelpers";
 
 // INTERNAL -- called only from convex/payments.ts (never directly by the
@@ -25,6 +26,10 @@ export const createPendingOrder = internalMutation({
       }),
     ),
   },
+  returns: v.object({
+    orderId: v.id("orders"),
+    totalAmount: v.number(),
+  }),
   handler: async (ctx, args) => {
     let calculatedTotal = 0;
     const verifiedItems = [];
@@ -77,8 +82,10 @@ export const attachPaymentReference = internalMutation({
     orderId: v.id("orders"),
     reference: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.orderId, { paystackReference: args.reference });
+    return null;
   },
 });
 
@@ -89,6 +96,10 @@ export const attachPaymentReference = internalMutation({
 // check makes every call after the first one a harmless no-op.
 export const finalizeOrderPayment = internalMutation({
   args: { orderId: v.id("orders") },
+  returns: v.object({
+    alreadyFinalized: v.boolean(),
+    hadStockShortfall: v.optional(v.boolean()),
+  }),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order) {
@@ -110,7 +121,12 @@ export const finalizeOrderPayment = internalMutation({
     let hadStockShortfall = false;
 
     for (const item of order.items) {
-      const product = await ctx.db.get(item.productId as any);
+      // item.productId is stored as a plain string snapshot (see
+      // schema.ts), but it always originates from a real
+      // v.id("products") value at order-creation time -- so this cast
+      // is safe, unlike the previous "as any" which hid real type
+      // errors instead of fixing them.
+      const product = await ctx.db.get(item.productId as Id<"products">);
       if (!product) continue;
 
       const newStock = product.stock - item.quantity;
