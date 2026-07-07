@@ -17,6 +17,7 @@ interface CartContextType {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">, quantity: number) => void;
   removeFromCart: (id: string, size: string, color: string) => void;
+  clearCart: () => void;
   getCartCount: () => number;
   getCartTotal: () => number;
 }
@@ -58,13 +59,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (existingItemIndex > -1) {
-  const updatedCart = [...prevCart];
-  updatedCart[existingItemIndex] = {
-    ...updatedCart[existingItemIndex],
-    quantity: updatedCart[existingItemIndex].quantity + quantity,
-  };
-  return updatedCart;
-}
+        const updatedCart = [...prevCart];
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          quantity: updatedCart[existingItemIndex].quantity + quantity,
+        };
+        return updatedCart;
+      }
 
       // Add a brand new item variant row
       return [...prevCart, { ...newItem, quantity }];
@@ -79,6 +80,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // Empties the cart entirely -- called once a payment has been genuinely
+  // confirmed on /checkout/complete, so a successful purchase doesn't
+  // leave the same items sitting in the cart afterward.
+  const clearCart = () => {
+    setCart([]);
+  };
+
   const getCartCount = () => {
     return cart.reduce((total, item) => total + item.quantity, 0);
   };
@@ -88,7 +96,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, getCartCount, getCartTotal }}>
+    <CartContext.Provider
+      value={{ cart, addToCart, removeFromCart, clearCart, getCartCount, getCartTotal }}
+    >
       {children}
     </CartContext.Provider>
   );
