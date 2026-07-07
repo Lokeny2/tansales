@@ -110,7 +110,7 @@ const initialProducts = [
 ];
 
 // 1. QUERY: Extract the complete apparel catalog for your storefront grid
-// (No lock needed — everyone should be able to browse the public catalog.)
+// (No lock needed -- everyone should be able to browse the public catalog.)
 export const listProducts = query({
   args: {},
   handler: async (ctx) => {
@@ -119,7 +119,7 @@ export const listProducts = query({
 });
 
 // 2. QUERY: Extract a single garment record using its type-safe Convex ID
-// (No lock needed — viewing one product is just as public as browsing all of them.)
+// (No lock needed -- viewing one product is just as public as browsing all of them.)
 export const getProductById = query({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
@@ -128,7 +128,7 @@ export const getProductById = query({
 });
 
 // 3. MUTATION: Seed the catalog with realistic clothing imagery
-// (Left unlocked deliberately — it's already self-guarded: it only ever
+// (Left unlocked deliberately -- it's already self-guarded: it only ever
 // inserts data once, when the table is empty, so it's harmless either way.)
 export const seedProducts = mutation({
   args: {},
@@ -159,7 +159,7 @@ export const seedProducts = mutation({
 });
 
 // 4. MUTATION: Provision a fresh apparel item into the store database
-// 🔒 Admin-only from here down — this changes real store data.
+// Admin-only from here down -- this changes real store data.
 export const addProduct = mutation({
   args: {
     token: v.string(),
@@ -192,7 +192,7 @@ export const addProduct = mutation({
 });
 
 // 5. MUTATION: Safely patch a product's details or adjust stock values
-// 🔒 Admin-only.
+// Admin-only.
 export const updateProduct = mutation({
   args: {
     id: v.id("products"),
@@ -219,13 +219,21 @@ export const updateProduct = mutation({
       );
     }
 
-    await ctx.db.patch(id, updates);
+    // Guard against accidentally wiping fields: only patch keys that were
+    // actually provided a real value. Without this, a field left out of
+    // the call (or explicitly sent as undefined by some future caller)
+    // could silently erase existing data via ctx.db.patch().
+    const sanitizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined),
+    );
+
+    await ctx.db.patch(id, sanitizedUpdates);
     return { success: true };
   },
 });
 
 // 6. MUTATION: Permanently drop a clothing option from your active catalog
-// 🔒 Admin-only.
+// Admin-only.
 export const deleteProduct = mutation({
   args: { id: v.id("products"), token: v.string() },
   handler: async (ctx, args) => {
