@@ -206,7 +206,7 @@ export default function CheckoutPage() {
             >
               {isProcessing
                 ? "REDIRECTING_TO_PAYSTACK..."
-                : `PROCEED_TO_PAYMENT // $${getCartTotal().toFixed(2)}`}
+                : `PROCEED_TO_PAYMENT // KSh ${getCartTotal().toLocaleString()}`}
             </button>
           </form>
 
@@ -241,7 +241,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-neutral-300 tracking-wider">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    KSh {(item.price * item.quantity).toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -251,7 +251,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-zinc-500 text-[11px]">
                 <span>AGGREGATE SUB-TOTAL</span>
                 <span className="text-neutral-300 font-medium">
-                  ${getCartTotal().toFixed(2)}
+                  KSh {getCartTotal().toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between text-zinc-500 text-[11px]">
@@ -261,7 +261,7 @@ export default function CheckoutPage() {
               <div className="border-t border-white/5 pt-3 flex justify-between text-sm font-bold text-white">
                 <span>TOTAL CHARGE</span>
                 <span className="text-accent-cyan">
-                  ${getCartTotal().toFixed(2)}
+                  KSh {getCartTotal().toLocaleString()}
                 </span>
               </div>
             </div>
