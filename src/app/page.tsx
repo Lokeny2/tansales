@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-// Static Editorial Collections Data (unchanged — just visual UI copy)
+// Static Editorial Collections Data (unchanged -- just visual UI copy)
 const CATEGORIES = [
   {
     name: "Tees",
@@ -17,7 +17,7 @@ const CATEGORIES = [
 ];
 
 export default function HomePage() {
-  // Pull the real, live catalog from Convex — same source as everywhere else now
+  // Pull the real, live catalog from Convex -- same source as everywhere else now
   const products = useQuery(api.products.listProducts);
 
   return (
@@ -52,7 +52,7 @@ export default function HomePage() {
               </h2>
             </div>
             <button className="bg-white text-obsidian text-xs font-semibold tracking-widest uppercase px-5 py-3 rounded-full hover:bg-accent-lime hover:text-white transition-all">
-              Explore Drop →
+              Explore Drop &rarr;
             </button>
           </div>
         </div>
@@ -88,21 +88,21 @@ export default function HomePage() {
         <div className="flex gap-6 text-gray-400">
           <span>Filter by:</span>
           <span className="text-white cursor-pointer hover:text-accent-lime transition-colors">
-            Category ▾
+            Category &#9662;
           </span>
           <span className="text-white cursor-pointer hover:text-accent-lime transition-colors">
-            Size ▾
+            Size &#9662;
           </span>
           <span className="text-white cursor-pointer hover:text-accent-lime transition-colors">
-            Price ▾
+            Price &#9662;
           </span>
         </div>
         <div className="cursor-pointer hover:text-accent-lime transition-colors">
-          Search 🔍
+          Search &#128269;
         </div>
       </section>
 
-      {/* 4. Product Catalog Grid — now backed by real Convex data */}
+      {/* 4. Product Catalog Grid -- now backed by real Convex data */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 py-12">
         {products === undefined ? (
           <p className="col-span-full text-center text-neutral-500 font-mono text-xs uppercase tracking-widest py-12">
@@ -141,7 +141,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <span className="font-semibold text-white">
-                  ${product.price.toFixed(2)}
+                  KSh {product.price.toLocaleString()}
                 </span>
               </div>
             </Link>
