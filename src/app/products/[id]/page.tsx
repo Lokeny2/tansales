@@ -47,7 +47,7 @@ export default function ProductDetailPage() {
         href="/"
         className="text-xs tracking-widest text-gray-400 hover:text-white uppercase inline-block mb-8 transition-colors"
       >
-        ← Back to Studio
+        &larr; Back to Studio
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
@@ -76,7 +76,7 @@ export default function ProductDetailPage() {
               {product.name}
             </h1>
             <p className="text-xl font-medium text-white">
-              ${product.price.toFixed(2)}
+              KSh {product.price.toLocaleString()}
             </p>
           </div>
 
@@ -92,8 +92,8 @@ export default function ProductDetailPage() {
           <ProductForm product={product} />
 
           <div className="text-[10px] text-zinc-500 uppercase tracking-wider space-y-1 pt-4 border-t border-white/5">
-            <p>✓ Free local express shipping over $150.</p>
-            <p>✓ Wrapped in fully recycled canvas product packaging bags.</p>
+            <p>&check; Free local express shipping over KSh 15,000.</p>
+            <p>&check; Wrapped in fully recycled canvas product packaging bags.</p>
           </div>
         </div>
       </div>
