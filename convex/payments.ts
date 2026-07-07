@@ -58,7 +58,7 @@ export const initializeCheckout = action({
     reference: v.string(),
     orderId: v.id("orders"),
   }),
-  handler: async (ctx, args): Promise<{
+  handler: async (ctx, args): Promise <{
     authorizationUrl: string;
     reference: string;
     orderId: Id<"orders">;
@@ -87,7 +87,7 @@ export const initializeCheckout = action({
       body: JSON.stringify({
         email: args.customer.email,
         amount: Math.round(totalAmount * 100),
-        currency: "USD",
+        currency: "KES",
         callback_url: `${siteUrl}/checkout/complete`,
         metadata: { orderId },
       }),
