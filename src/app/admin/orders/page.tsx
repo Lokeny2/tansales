@@ -10,7 +10,7 @@ function AdminOrdersContent() {
 
   // Pull live data stream using the newly exposed query function.
   // "skip" tells Convex not to run the query at all until we actually
-  // have a token to send — avoids a brief, pointless failed request.
+  // have a token to send -- avoids a brief, pointless failed request.
   const orders = useQuery(
     api.orders.getOrdersLog,
     token ? { token } : "skip",
@@ -20,7 +20,7 @@ function AdminOrdersContent() {
   if (orders === undefined) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center font-mono text-neutral-500">
-        <span className="animate-pulse">⏳ CALIBRATING LOGISTICS MONITOR DECK...</span>
+        <span className="animate-pulse">CALIBRATING LOGISTICS MONITOR DECK...</span>
       </div>
     );
   }
@@ -78,7 +78,7 @@ function AdminOrdersContent() {
                       {standardDate}
                     </span>
                     <p className="text-xl font-bold text-emerald-400 mt-1 font-mono">
-                      ${order.totalAmount.toFixed(2)}
+                      KSh {order.totalAmount.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -96,11 +96,11 @@ function AdminOrdersContent() {
                         <div className="text-neutral-300">
                           <span className="text-neutral-100 font-medium">{item.name}</span>
                           <div className="text-xs text-neutral-500 mt-0.5">
-                            VARIANT: {item.size} // {item.color} × {item.quantity}
+                            VARIANT: {item.size} // {item.color} &times; {item.quantity}
                           </div>
                         </div>
                         <span className="text-neutral-400 font-semibold">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          KSh {(item.price * item.quantity).toLocaleString()}
                         </span>
                       </div>
                     ))}
