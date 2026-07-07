@@ -1,3 +1,4 @@
+// convex/payments.ts
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -5,18 +6,36 @@ import type { Id } from "./_generated/dataModel";
 
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
 
-// ACTION: Called directly from the checkout page. Creates a pending
-// order, then asks Paystack for a hosted payment link and hands it back
-// to the browser to redirect to. Actions (unlike mutations/queries) are
-// allowed to make outbound network calls -- that's the whole reason this
-// lives here instead of in orders.ts.
-//
-// The explicit `returns` validator below isn't just documentation -- it
-// breaks a circular-inference deadlock that happens because this file
-// calls into orders.ts via `internal.orders.*`, while orders.ts's own
-// generated types depend on every file (including this one) already
-// being resolved. Declaring the shape directly, instead of asking
-// TypeScript to infer it by tracing the whole call chain, resolves it.
+// ===== TYPE DEFINITIONS =====
+
+interface PaystackInitResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    authorization_url: string;
+    reference: string;
+  };
+}
+
+interface PaystackVerifyResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    status: string;
+    metadata?: {
+      orderId?: string;
+    };
+  };
+}
+
+// ===== UPDATED: Make hadStockShortfall optional =====
+interface FinalizeOrderResult {
+  alreadyFinalized: boolean;
+  hadStockShortfall?: boolean;  // ← Made optional with ?
+}
+
+// ===== ACTION: initializeCheckout =====
+
 export const initializeCheckout = action({
   args: {
     customer: v.object({
@@ -39,7 +58,11 @@ export const initializeCheckout = action({
     reference: v.string(),
     orderId: v.id("orders"),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    authorizationUrl: string;
+    reference: string;
+    orderId: Id<"orders">;
+  }> => {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) {
       throw new Error(
@@ -47,16 +70,14 @@ export const initializeCheckout = action({
       );
     }
 
-    // Step 1: create the order as "pending" -- no stock touched yet.
-    const { orderId, totalAmount } = await ctx.runMutation(
-      internal.orders.createPendingOrder,
-      { customer: args.customer, items: args.items },
-    );
+    const { orderId, totalAmount }: { orderId: Id<"orders">; totalAmount: number } =
+      await ctx.runMutation(internal.orders.createPendingOrder, {
+        customer: args.customer,
+        items: args.items,
+      });
 
     const siteUrl = process.env.SITE_URL || "http://localhost:3000";
 
-    // Step 2: ask Paystack for a payment link. Amount must be in the
-    // smallest unit of the currency (cents, for USD).
     const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
       method: "POST",
       headers: {
@@ -72,11 +93,7 @@ export const initializeCheckout = action({
       }),
     });
 
-    const data: {
-      status: boolean;
-      message?: string;
-      data?: { authorization_url: string; reference: string };
-    } = await response.json();
+    const data: PaystackInitResponse = await response.json();
 
     if (!response.ok || !data.status || !data.data) {
       throw new Error(
@@ -84,8 +101,6 @@ export const initializeCheckout = action({
       );
     }
 
-    // Step 3: remember which Paystack reference belongs to this order,
-    // so the webhook and verify step can both find it later.
     await ctx.runMutation(internal.orders.attachPaymentReference, {
       orderId,
       reference: data.data.reference,
@@ -99,14 +114,12 @@ export const initializeCheckout = action({
   },
 });
 
-// ACTION: Called from the /checkout/complete page once the customer's
-// browser returns from Paystack. Independently asks Paystack "did this
-// really succeed?" rather than trusting the URL the browser landed on --
-// a browser redirect alone can be manipulated or can simply never arrive
-// (closed tab, dead connection), so this is a genuine server-to-server
-// confirmation, not a rubber stamp.
+// ===== ACTION: verifyPayment =====
+
 export const verifyPayment = action({
-  args: { reference: v.string() },
+  args: {
+    reference: v.string(),
+  },
   returns: v.object({
     success: v.boolean(),
     message: v.optional(v.string()),
@@ -114,7 +127,13 @@ export const verifyPayment = action({
     alreadyFinalized: v.optional(v.boolean()),
     hadStockShortfall: v.optional(v.boolean()),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    message?: string;
+    orderId?: Id<"orders">;
+    alreadyFinalized?: boolean;
+    hadStockShortfall?: boolean;
+  }> => {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) {
       throw new Error(
@@ -129,14 +148,13 @@ export const verifyPayment = action({
       },
     );
 
-    const data: {
-      status: boolean;
-      message?: string;
-      data?: { status: string; metadata?: { orderId?: string } };
-    } = await response.json();
+    const data: PaystackVerifyResponse = await response.json();
 
     if (!response.ok || !data.status || !data.data) {
-      return { success: false, message: data.message || "Verification failed." };
+      return {
+        success: false,
+        message: data.message || "Verification failed.",
+      };
     }
 
     const transaction = data.data;
@@ -156,9 +174,13 @@ export const verifyPayment = action({
       };
     }
 
-    const result = await ctx.runMutation(internal.orders.finalizeOrderPayment, {
-      orderId,
-    });
+    // ===== FIXED: TypeScript now accepts this =====
+    const result: FinalizeOrderResult = await ctx.runMutation(
+      internal.orders.finalizeOrderPayment,
+      {
+        orderId,
+      },
+    );
 
     return {
       success: true,
