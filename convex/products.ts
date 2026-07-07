@@ -2,10 +2,13 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./authHelpers";
 
+// Prices are in KES (Kenyan Shillings), rounded to clean retail figures
+// based roughly on prevailing USD/KES exchange rates -- adjust these to
+// whatever you actually want to charge.
 const initialProducts = [
   {
     name: "Studio Oversized Hoodie",
-    price: 96,
+    price: 12500,
     stock: 18,
     imageUrl:
       "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
@@ -18,7 +21,7 @@ const initialProducts = [
   },
   {
     name: "Minimal Tailored Coat",
-    price: 148,
+    price: 19000,
     stock: 10,
     imageUrl:
       "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1000&auto=format&fit=crop",
@@ -31,7 +34,7 @@ const initialProducts = [
   },
   {
     name: "Utility Denim Jacket",
-    price: 112,
+    price: 14500,
     stock: 12,
     imageUrl:
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
@@ -44,7 +47,7 @@ const initialProducts = [
   },
   {
     name: "Contour Knit Tee",
-    price: 54,
+    price: 7000,
     stock: 24,
     imageUrl:
       "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
@@ -57,7 +60,7 @@ const initialProducts = [
   },
   {
     name: "Sculpted Wool Blazer",
-    price: 176,
+    price: 22500,
     stock: 8,
     imageUrl:
       "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1000&auto=format&fit=crop",
@@ -70,7 +73,7 @@ const initialProducts = [
   },
   {
     name: "Soft Tech Jogger",
-    price: 88,
+    price: 11500,
     stock: 16,
     imageUrl:
       "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop",
@@ -83,7 +86,7 @@ const initialProducts = [
   },
   {
     name: "Cropped Shell Jacket",
-    price: 124,
+    price: 16000,
     stock: 11,
     imageUrl:
       "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000&auto=format&fit=crop",
@@ -96,7 +99,7 @@ const initialProducts = [
   },
   {
     name: "Minimalist Knit Set",
-    price: 132,
+    price: 17000,
     stock: 9,
     imageUrl:
       "https://images.unsplash.com/photo-1487412912498-0447578fcca8?q=80&w=1000&auto=format&fit=crop",
@@ -220,9 +223,7 @@ export const updateProduct = mutation({
     }
 
     // Guard against accidentally wiping fields: only patch keys that were
-    // actually provided a real value. Without this, a field left out of
-    // the call (or explicitly sent as undefined by some future caller)
-    // could silently erase existing data via ctx.db.patch().
+    // actually provided a real value.
     const sanitizedUpdates = Object.fromEntries(
       Object.entries(updates).filter(([, value]) => value !== undefined),
     );
