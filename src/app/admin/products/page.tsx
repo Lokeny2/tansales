@@ -207,7 +207,7 @@ function AdminProductsContent() {
                     {product.name}
                   </p>
                   <p className="text-[11px] font-mono text-neutral-500">
-                    {product.category} - stock {product.stock}
+                    {product.category} - KSh {product.price.toLocaleString()} - stock {product.stock}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -249,16 +249,17 @@ function AdminProductsContent() {
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
-                  Price (USD) *
+                  Price (KES) *
                 </label>
                 <input
                   type="number"
                   name="price"
-                  step="0.01"
+                  step="1"
+                  min="0"
                   required
                   value={formData.price}
                   onChange={handleChange}
-                  placeholder="0.00"
+                  placeholder="12500"
                   className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
               </div>
             </div>
