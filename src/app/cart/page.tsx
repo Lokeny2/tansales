@@ -89,7 +89,7 @@ export default function CartPage() {
               {/* Right Aspect: Price Execution & Delete Trigger */}
               <div className="flex flex-col items-end gap-3 text-xs tracking-wider uppercase">
                 <span className="font-semibold text-white">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  KSh {(item.price * item.quantity).toLocaleString()}
                 </span>
                 <button
                   type="button"
@@ -114,7 +114,7 @@ export default function CartPage() {
             <div className="flex justify-between">
               <span>Subtotal</span>
               <span className="text-white font-medium">
-                ${getCartTotal().toFixed(2)}
+                KSh {getCartTotal().toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between">
@@ -123,12 +123,12 @@ export default function CartPage() {
             </div>
             <div className="flex justify-between">
               <span>Estimated Tax</span>
-              <span className="text-white font-medium">$0.00</span>
+              <span className="text-white font-medium">KSh 0</span>
             </div>
 
             <div className="border-t border-white/10 pt-4 flex justify-between text-sm font-bold text-white">
               <span>Estimated Total</span>
-              <span>${getCartTotal().toFixed(2)}</span>
+              <span>KSh {getCartTotal().toLocaleString()}</span>
             </div>
           </div>
 
@@ -141,7 +141,7 @@ export default function CartPage() {
           </Link>
 
           <div className="text-[9px] text-zinc-500 text-center uppercase tracking-widest">
-            🔒 Secure transaction pipeline protocol.
+            Secure transaction pipeline protocol.
           </div>
         </div>
       </div>
