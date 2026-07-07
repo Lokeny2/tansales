@@ -12,6 +12,9 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
+    /* ===== ADDED: Node.js type definitions ===== */
+    "types": ["node"],
+
     /* These compiler options are required by Convex */
     "target": "ESNext",
     "lib": ["ES2023", "dom"],
@@ -20,6 +23,16 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
-  "exclude": ["./_generated"]
+  "include": [
+    "./**/*",
+
+    /* ===== ADDED: Ensure convex folder is included ===== */
+    "./convex/**/*"
+  ],
+  "exclude": [
+    "./_generated",
+
+    /* ===== ADDED: Exclude node_modules ===== */
+    "node_modules"
+  ]
 }
