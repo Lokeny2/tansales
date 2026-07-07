@@ -10,6 +10,13 @@ const PAYSTACK_BASE_URL = "https://api.paystack.co";
 // to the browser to redirect to. Actions (unlike mutations/queries) are
 // allowed to make outbound network calls -- that's the whole reason this
 // lives here instead of in orders.ts.
+//
+// The explicit `returns` validator below isn't just documentation -- it
+// breaks a circular-inference deadlock that happens because this file
+// calls into orders.ts via `internal.orders.*`, while orders.ts's own
+// generated types depend on every file (including this one) already
+// being resolved. Declaring the shape directly, instead of asking
+// TypeScript to infer it by tracing the whole call chain, resolves it.
 export const initializeCheckout = action({
   args: {
     customer: v.object({
@@ -27,6 +34,11 @@ export const initializeCheckout = action({
       }),
     ),
   },
+  returns: v.object({
+    authorizationUrl: v.string(),
+    reference: v.string(),
+    orderId: v.id("orders"),
+  }),
   handler: async (ctx, args) => {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) {
@@ -36,11 +48,10 @@ export const initializeCheckout = action({
     }
 
     // Step 1: create the order as "pending" -- no stock touched yet.
-    const { orderId, totalAmount }: { orderId: Id<"orders">; totalAmount: number } =
-      await ctx.runMutation(internal.orders.createPendingOrder, {
-        customer: args.customer,
-        items: args.items,
-      });
+    const { orderId, totalAmount } = await ctx.runMutation(
+      internal.orders.createPendingOrder,
+      { customer: args.customer, items: args.items },
+    );
 
     const siteUrl = process.env.SITE_URL || "http://localhost:3000";
 
@@ -61,9 +72,13 @@ export const initializeCheckout = action({
       }),
     });
 
-    const data = await response.json();
+    const data: {
+      status: boolean;
+      message?: string;
+      data?: { authorization_url: string; reference: string };
+    } = await response.json();
 
-    if (!response.ok || !data.status) {
+    if (!response.ok || !data.status || !data.data) {
       throw new Error(
         `Paystack initialize failed: ${data.message || response.statusText}`,
       );
@@ -77,8 +92,8 @@ export const initializeCheckout = action({
     });
 
     return {
-      authorizationUrl: data.data.authorization_url as string,
-      reference: data.data.reference as string,
+      authorizationUrl: data.data.authorization_url,
+      reference: data.data.reference,
       orderId,
     };
   },
@@ -92,6 +107,13 @@ export const initializeCheckout = action({
 // confirmation, not a rubber stamp.
 export const verifyPayment = action({
   args: { reference: v.string() },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.optional(v.string()),
+    orderId: v.optional(v.id("orders")),
+    alreadyFinalized: v.optional(v.boolean()),
+    hadStockShortfall: v.optional(v.boolean()),
+  }),
   handler: async (ctx, args) => {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) {
@@ -107,9 +129,13 @@ export const verifyPayment = action({
       },
     );
 
-    const data = await response.json();
+    const data: {
+      status: boolean;
+      message?: string;
+      data?: { status: string; metadata?: { orderId?: string } };
+    } = await response.json();
 
-    if (!response.ok || !data.status) {
+    if (!response.ok || !data.status || !data.data) {
       return { success: false, message: data.message || "Verification failed." };
     }
 
@@ -134,6 +160,11 @@ export const verifyPayment = action({
       orderId,
     });
 
-    return { success: true, orderId, ...result };
+    return {
+      success: true,
+      orderId,
+      alreadyFinalized: result.alreadyFinalized,
+      hadStockShortfall: result.hadStockShortfall,
+    };
   },
 });
