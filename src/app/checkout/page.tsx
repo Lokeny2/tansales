@@ -3,27 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { useCart } from "@/context/CartContext";
 
 export default function CheckoutPage() {
   const { cart, getCartTotal, getCartCount } = useCart();
-  const placeOrder = useMutation(api.orders.placeOrder);
+  const initializeCheckout = useAction(api.payments.initializeCheckout);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Logistics tracking state fields
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     street: "",
     city: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,14 +26,17 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Live Async Database Form Handler Execution Loop
+  // Kicks off the real payment flow: create a pending order, get a
+  // Paystack payment link back, then hand the browser off to Paystack's
+  // own hosted checkout page. Nothing is marked "paid" here -- that only
+  // happens later, once Paystack itself confirms the charge.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setIsProcessing(true);
 
     try {
-      await placeOrder({
+      const result = await initializeCheckout({
         customer: {
           fullName: formData.fullName,
           email: formData.email,
@@ -53,14 +51,13 @@ export default function CheckoutPage() {
         })),
       });
 
-      setIsSuccess(true);
+      // Hand off to Paystack's hosted payment page.
+      window.location.href = result.authorizationUrl;
     } catch (error: any) {
-      console.error("Checkout validation operation exception error:", error);
+      console.error("Checkout initialization error:", error);
       setErrorMessage(
-        error.message ||
-          "Network pipeline exception error. Check terminal logs.",
+        error.message || "Could not start checkout. Please try again.",
       );
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -70,7 +67,7 @@ export default function CheckoutPage() {
   );
 
   // Render empty bag layout state
-  if (cart.length === 0 && !isSuccess) {
+  if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center text-center px-6 selection:bg-accent-lime/20">
         <div className="glass-panel p-8 rounded-2xl max-w-sm border border-white/5 bg-white/[0.01] backdrop-blur-xl space-y-6">
@@ -92,60 +89,9 @@ export default function CheckoutPage() {
     );
   }
 
-  // Live Database Transaction Confirmation View
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center px-6 selection:bg-accent-lime/20">
-        <div className="glass-panel p-8 rounded-2xl max-w-md w-full border border-white/5 bg-white/[0.01] backdrop-blur-xl text-center space-y-6">
-          <div className="w-12 h-12 bg-accent-lime/10 border border-accent-lime/30 text-accent-lime rounded-full flex items-center justify-center text-md font-mono mx-auto animate-pulse">
-            ✓
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-xl font-black uppercase tracking-wider text-white font-mono">
-              RECORD_COMMITTED
-            </h1>
-            <p className="text-[11px] text-zinc-400 uppercase tracking-widest leading-relaxed">
-              Transaction payload ingested seamlessly into cloud database log
-              tree. Fulfillment pipeline initialized.
-            </p>
-          </div>
-
-          <div className="border border-white/5 bg-black/40 p-4 rounded-xl text-left text-[11px] tracking-wider uppercase font-mono text-zinc-400 space-y-1.5">
-            <p>
-              RECIPIENT:{" "}
-              <strong className="text-white font-sans">
-                {formData.fullName}
-              </strong>
-            </p>
-            <p>
-              DESTINATION:{" "}
-              <strong className="text-white font-sans">
-                {formData.city}, KE
-              </strong>
-            </p>
-            <p>
-              CHARGED VALUE:{" "}
-              <strong className="text-accent-cyan font-sans">
-                ${getCartTotal().toFixed(2)}
-              </strong>
-            </p>
-          </div>
-
-          <Link
-            href="/"
-            className="w-full bg-white text-black font-mono font-black text-xs uppercase tracking-widest py-3.5 rounded-xl hover:bg-accent-lime hover:text-black transition-all duration-300 block"
-          >
-            RESET_STUDIO_INVENTORY
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-accent-lime/20">
       <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20">
-        {/* Architecture Header */}
         <header className="border-b border-white/5 pb-6 mb-12 flex justify-between items-end">
           <div>
             <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase block mb-1">
@@ -162,17 +108,15 @@ export default function CheckoutPage() {
 
         {errorMessage && (
           <div className="bg-red-500/5 border border-red-500/20 text-red-400 text-xs font-mono rounded-xl p-4 mb-8 uppercase tracking-wider">
-            ⚠ INGESTION_CRASH: {errorMessage}
+            INGESTION_CRASH: {errorMessage}
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-start">
-          {/* Checkout Data Form Group */}
           <form
             onSubmit={handleSubmit}
             className="lg:col-span-3 flex flex-col gap-10"
           >
-            {/* Form Section 1 */}
             <div className="flex flex-col gap-6">
               <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-2">
                 01 // SHIPPING_LOGISTICS
@@ -239,61 +183,16 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Form Section 2 */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
               <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-2">
-                02 // SIMULATED_GATEWAY_CREDENTIALS
+                02 // PAYMENT
               </h2>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  name="cardNumber"
-                  required
-                  value={formData.cardNumber}
-                  onChange={handleInputChange}
-                  maxLength={19}
-                  placeholder="0000 0000 0000 0000"
-                  className="bg-white/[0.01] border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-white/20 transition-colors font-mono placeholder:text-zinc-700"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                    Expiration Date
-                  </label>
-                  <input
-                    type="text"
-                    name="expiry"
-                    required
-                    value={formData.expiry}
-                    onChange={handleInputChange}
-                    maxLength={5}
-                    placeholder="MM/YY"
-                    className="bg-white/[0.01] border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-white/20 transition-colors font-mono placeholder:text-zinc-700"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                    Security CVV
-                  </label>
-                  <input
-                    type="password"
-                    name="cvv"
-                    required
-                    value={formData.cvv}
-                    onChange={handleInputChange}
-                    maxLength={3}
-                    placeholder="•••"
-                    className="bg-white/[0.01] border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-white/20 transition-colors font-mono placeholder:text-zinc-700"
-                  />
-                </div>
-              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                You'll be securely redirected to Paystack to complete your
+                payment. We never see or store your card details.
+              </p>
             </div>
 
-            {/* Submission Controller */}
             <button
               type="submit"
               disabled={!isFormValid || isProcessing}
@@ -306,18 +205,16 @@ export default function CheckoutPage() {
               }`}
             >
               {isProcessing
-                ? "TRANSMITTING_TRANSACTION..."
-                : `COMMIT_LEDGER_RECORD // $${getCartTotal().toFixed(2)}`}
+                ? "REDIRECTING_TO_PAYSTACK..."
+                : `PROCEED_TO_PAYMENT // $${getCartTotal().toFixed(2)}`}
             </button>
           </form>
 
-          {/* Dynamic Summary Review Columns */}
           <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 bg-white/[0.01] backdrop-blur-xl sticky top-12 flex flex-col gap-6 shadow-2xl">
             <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400 border-b border-white/5 pb-3">
               BUFFERED_ITEMS [{getCartCount()}]
             </h2>
 
-            {/* Order Flow Feed list */}
             <div className="max-h-64 overflow-y-auto divide-y divide-white/5 pr-1 custom-scrollbar">
               {cart.map((item) => (
                 <div
@@ -350,7 +247,6 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* Calculations Deck */}
             <div className="border-t border-white/5 pt-4 space-y-2.5 text-xs tracking-wider uppercase font-mono">
               <div className="flex justify-between text-zinc-500 text-[11px]">
                 <span>AGGREGATE SUB-TOTAL</span>
