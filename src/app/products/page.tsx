@@ -85,7 +85,7 @@ export default function SalesDashboard() {
               className="bg-neutral-950/60 border border-white/5 rounded-xl p-1.5 flex items-center gap-1"
             >
               <span className="text-xs font-mono text-neutral-400 px-2">
-                🛒 BUCKET:
+                BUCKET:
               </span>
               <span className="bg-emerald-500 text-neutral-950 text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg transition-all">
                 {getCartCount()} units
@@ -150,7 +150,7 @@ export default function SalesDashboard() {
                         {item.name}
                       </h3>
                       <span className="text-sm font-mono font-bold text-emerald-400">
-                        ${item.price.toFixed(2)}
+                        KSh {item.price.toLocaleString()}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-neutral-500 line-clamp-2 leading-relaxed">
@@ -164,7 +164,7 @@ export default function SalesDashboard() {
                     TAG: {item.category.toUpperCase()}
                   </span>
                   <span className="text-[10px] font-mono font-bold bg-white/5 border border-white/5 text-neutral-300 px-3 py-1.5 rounded-lg group-hover:bg-emerald-500 group-hover:text-black group-hover:border-emerald-500 transition-all duration-200">
-                    VIEW & ADD →
+                    VIEW &amp; ADD &rarr;
                   </span>
                 </div>
               </Link>
