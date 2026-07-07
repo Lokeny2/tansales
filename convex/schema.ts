@@ -32,7 +32,11 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_userId", ["userId"]),
 
-  // Immutable checkout transaction tickets ledger
+  // Checkout transaction tickets ledger.
+  // An order starts as "pending" the moment checkout begins, and only
+  // becomes "paid" once Paystack has genuinely confirmed the charge
+  // (via the verify step or the webhook) -- never based on the
+  // customer's browser alone.
   orders: defineTable({
     customer: v.object({
       fullName: v.string(),
@@ -52,7 +56,8 @@ export default defineSchema({
     ),
     totalAmount: v.number(),
     fulfillmentStatus: v.string(), // "unfulfilled" | "fulfilled"
-    paymentStatus: v.string(), // "paid" | "failed"
+    paymentStatus: v.string(), // "pending" | "paid" | "failed"
+    paystackReference: v.optional(v.string()),
     createdAt: v.string(),
-  }),
+  }).index("by_reference", ["paystackReference"]),
 });
