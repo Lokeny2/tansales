@@ -11,19 +11,20 @@ export default function Navbar() {
   return (
     <nav className="w-full border-b border-white/10 bg-obsidian/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center text-xs font-medium tracking-widest uppercase">
-        {/* Left: Categories */}
+        {/* Left: Categories -- these link to real categories that exist
+            in the product data, so the filter actually does something. */}
         <div className="flex gap-8">
           <Link
-            href="/products?category=men"
+            href="/products?category=Outerwear"
             className="hover:text-accent-lime transition-colors"
           >
-            Male
+            Outerwear
           </Link>
           <Link
-            href="/products?category=women"
+            href="/products?category=Tees"
             className="hover:text-accent-lime transition-colors"
           >
-            Female
+            Tees
           </Link>
         </div>
 
@@ -34,12 +35,6 @@ export default function Navbar() {
 
         {/* Right: Operations */}
         <div className="flex gap-8 items-center">
-          <Link
-            href="/wishlist"
-            className="hover:text-accent-lime transition-colors hidden md:block"
-          >
-            Wishlist
-          </Link>
           <Link
             href="/cart"
             className="hover:text-accent-lime transition-colors flex items-center gap-2"
