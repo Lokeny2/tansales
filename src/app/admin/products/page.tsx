@@ -165,8 +165,8 @@ function AdminProductsContent() {
   };
 
   return (
-    <><div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 selection:bg-emerald-500/30 font-sans">
-      <header className="max-w-3xl mx-auto mb-10 flex justify-between items-end border-b border-neutral-800 pb-6">
+    <><div className="min-h-screen bg-obsidian text-neutral-100 p-8 selection:bg-accent-lime/20 font-sans">
+      <header className="max-w-3xl mx-auto mb-10 flex justify-between items-end border-b border-white/10 pb-6">
         <div>
           <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             CONTROL CENTER
@@ -177,7 +177,7 @@ function AdminProductsContent() {
         </div>
 
         <a href="/products"
-        className="text-xs font-mono text-neutral-400 hover:text-white border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 rounded-md transition-colors"
+        className="text-xs font-mono text-neutral-400 hover:text-white border border-white/10 bg-white/[0.02] px-3 py-1.5 rounded-md transition-colors"
         >
         VIEW LIVE CATALOG
       </a>
@@ -196,7 +196,7 @@ function AdminProductsContent() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-mono text-neutral-300"
+                className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-neutral-300"
               >
                 CANCEL EDIT
               </button>
@@ -207,7 +207,7 @@ function AdminProductsContent() {
             {products?.map((product) => (
               <div
                 key={product._id}
-                className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-2"
+                className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {product.imageUrl && (
@@ -215,7 +215,7 @@ function AdminProductsContent() {
                     <img
                       src={product.imageUrl}
                       alt=""
-                      className="w-9 h-9 rounded object-cover border border-neutral-800 flex-shrink-0"
+                      className="w-9 h-9 rounded object-cover border border-white/10 flex-shrink-0"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
@@ -234,7 +234,7 @@ function AdminProductsContent() {
                   <button
                     type="button"
                     onClick={() => startEditing(product)}
-                    className="rounded border border-neutral-700 px-2.5 py-1 text-[11px] font-mono text-neutral-300"
+                    className="rounded border border-white/10 px-2.5 py-1 text-[11px] font-mono text-neutral-300"
                   >
                     EDIT
                   </button>
@@ -265,7 +265,7 @@ function AdminProductsContent() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="e.g., Minimalist Kuro Hoodie"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -280,7 +280,7 @@ function AdminProductsContent() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="12500"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600" />
               </div>
             </div>
 
@@ -296,7 +296,7 @@ function AdminProductsContent() {
                   value={formData.category}
                   onChange={handleChange}
                   placeholder="outerwear, pants, shirts"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
@@ -306,7 +306,7 @@ function AdminProductsContent() {
                   name="tag"
                   value={formData.tag}
                   onChange={handleChange}
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors"
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors"
                 >
                   <option value="NEW">NEW</option>
                   <option value="ESSENTIAL">ESSENTIAL</option>
@@ -327,12 +327,9 @@ function AdminProductsContent() {
                   value={formData.imageUrl}
                   onChange={handleChange}
                   placeholder="https://images.unsplash.com/photo-..."
-                  className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
+                  className="flex-1 bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600 font-mono" />
 
-                {/* Live preview -- so admins can see what they're
-                    pasting before saving, instead of finding out only
-                    after the product page fails to load the image. */}
-                <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-900/50 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 rounded-lg border border-white/10 bg-white/[0.02] flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {formData.imageUrl && !imagePreviewFailed ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -365,7 +362,7 @@ function AdminProductsContent() {
                   value={formData.sizes}
                   onChange={handleChange}
                   placeholder="S, M, L, XL"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600 font-mono" />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-1">
@@ -380,7 +377,7 @@ function AdminProductsContent() {
                   value={formData.colors}
                   onChange={handleChange}
                   placeholder="Matte Black, Vintage Grey"
-                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600" />
+                  className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600" />
               </div>
             </div>
 
@@ -394,17 +391,17 @@ function AdminProductsContent() {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Describe material compositions, weave patterns, or tailored drop configurations..."
-                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 leading-relaxed resize-none" />
+                className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-neutral-600 leading-relaxed resize-none" />
             </div>
 
-            <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex-1 min-w-0">
                 {status.type !== "idle" && (
                   <p
                     className={`text-xs font-mono truncate px-3 py-2 rounded border ${status.type === "loading"
-                        ? "bg-neutral-900 text-neutral-400 border-neutral-800 animate-pulse"
+                        ? "bg-white/[0.02] text-neutral-400 border-white/10 animate-pulse"
                         : status.type === "success"
-                          ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"
+                          ? "bg-accent-lime/10 text-accent-lime border-accent-lime/20"
                           : "bg-rose-950/30 text-rose-400 border-rose-500/20"}`}
                   >
                     {status.message}
@@ -415,7 +412,7 @@ function AdminProductsContent() {
               <button
                 type="submit"
                 disabled={status.type === "loading"}
-                className="sm:w-auto px-6 py-2.5 rounded-lg text-sm font-mono font-bold bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-500 transition-all cursor-pointer shadow-lg active:scale-98 whitespace-nowrap"
+                className="sm:w-auto px-6 py-2.5 rounded-lg text-sm font-mono font-bold bg-white text-black hover:bg-accent-lime hover:text-white disabled:bg-neutral-800 disabled:text-neutral-500 transition-all cursor-pointer shadow-lg active:scale-98 whitespace-nowrap"
               >
                 {editingProductId
                   ? "UPDATE SKU IN ATLAS"
