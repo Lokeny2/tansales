@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import "./globals.css"; // Keep your existing global styles import
+import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
 import Navbar from "@/components/layout/Navbar";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 export const metadata: Metadata = {
   title: "Tanite Sales Studio",
@@ -17,13 +18,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-neutral-950 text-neutral-100">
-        {/* Injecting the connection context around the view tree */}
+      {/* Uses the theme's actual design tokens (bg-obsidian / text-foreground)
+          instead of hardcoded neutral-950/100, so the whole app draws from
+          one consistent source of truth defined in globals.css. */}
+      <body className="antialiased bg-obsidian text-foreground">
         <ConvexClientProvider>
           <AuthProvider>
             <CartProvider>
-              <Navbar />
-              {children}
+              <WishlistProvider>
+                <Navbar />
+                {children}
+              </WishlistProvider>
             </CartProvider>
           </AuthProvider>
         </ConvexClientProvider>
