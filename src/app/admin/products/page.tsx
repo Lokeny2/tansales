@@ -34,6 +34,8 @@ function AdminProductsContent() {
     colors: "",
   });
 
+  const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
+
   const [editingProductId, setEditingProductId] =
     useState<Id<"products"> | null>(null);
   const products = useQuery(api.products.listProducts) as
@@ -58,6 +60,7 @@ function AdminProductsContent() {
       sizes: "",
       colors: "",
     });
+    setImagePreviewFailed(false);
     setEditingProductId(null);
   };
 
@@ -66,10 +69,14 @@ function AdminProductsContent() {
   ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "imageUrl") {
+      setImagePreviewFailed(false);
+    }
   }
 
   const startEditing = (product: ProductRecord) => {
     setEditingProductId(product._id);
+    setImagePreviewFailed(false);
     setFormData({
       name: product.name,
       price: String(product.price),
@@ -202,15 +209,28 @@ function AdminProductsContent() {
                 key={product._id}
                 className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-2"
               >
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {product.name}
-                  </p>
-                  <p className="text-[11px] font-mono text-neutral-500">
-                    {product.category} - KSh {product.price.toLocaleString()} - stock {product.stock}
-                  </p>
+                <div className="flex items-center gap-3 min-w-0">
+                  {product.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={product.imageUrl}
+                      alt=""
+                      className="w-9 h-9 rounded object-cover border border-neutral-800 flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate">
+                      {product.name}
+                    </p>
+                    <p className="text-[11px] font-mono text-neutral-500">
+                      {product.category} - KSh {product.price.toLocaleString()} - stock {product.stock}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => startEditing(product)}
@@ -300,13 +320,35 @@ function AdminProductsContent() {
               <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400 mb-2">
                 Image Resource URL
               </label>
-              <input
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
+              <div className="flex gap-3 items-start">
+                <input
+                  type="url"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors placeholder:text-neutral-600 font-mono" />
+
+                {/* Live preview -- so admins can see what they're
+                    pasting before saving, instead of finding out only
+                    after the product page fails to load the image. */}
+                <div className="w-14 h-14 rounded-lg border border-neutral-800 bg-neutral-900/50 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  {formData.imageUrl && !imagePreviewFailed ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onError={() => setImagePreviewFailed(true)}
+                      onLoad={() => setImagePreviewFailed(false)}
+                    />
+                  ) : (
+                    <span className="text-[8px] font-mono text-neutral-600 text-center px-1">
+                      {formData.imageUrl ? "INVALID" : "PREVIEW"}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
