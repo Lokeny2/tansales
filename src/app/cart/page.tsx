@@ -5,7 +5,15 @@ import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 
 export default function CartPage() {
-  const { cart, removeFromCart, getCartTotal, getCartCount } = useCart();
+  const { cart, removeFromCart, clearCart, getCartTotal, getCartCount } = useCart();
+
+  // Confirm before wiping the whole cart -- a single misclick shouldn't
+  // undo everything someone has added.
+  const handleClearCart = () => {
+    if (window.confirm("Remove all items from your cart? This can't be undone.")) {
+      clearCart();
+    }
+  };
 
   // 1. Clean Empty State Handler
   if (cart.length === 0) {
@@ -39,9 +47,18 @@ export default function CartPage() {
             Shopping Cart
           </h1>
         </div>
-        <span className="text-xs text-zinc-400 tracking-widest uppercase">
-          Total Items // [ {getCartCount()} ]
-        </span>
+        <div className="flex items-center gap-6">
+          <span className="text-xs text-zinc-400 tracking-widest uppercase">
+            Total Items // [ {getCartCount()} ]
+          </span>
+          <button
+            type="button"
+            onClick={handleClearCart}
+            className="text-[10px] text-zinc-500 hover:text-red-400 underline transition-colors cursor-pointer uppercase tracking-widest"
+          >
+            Clear Cart
+          </button>
+        </div>
       </header>
 
       {/* Two Column Layout Mesh */}
