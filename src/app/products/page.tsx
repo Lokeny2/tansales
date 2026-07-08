@@ -1,17 +1,30 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { useCart } from "@/context/CartContext";
 import { api } from "../../../convex/_generated/api";
 
-export default function SalesDashboard() {
+function SalesDashboardContent() {
   const products = useQuery(api.products.listProducts);
   const { getCartCount } = useCart();
+  const searchParams = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+
+  // Pick up an initial category from the URL (e.g. /products?category=Tees),
+  // so links from the navbar actually land on a pre-filtered view instead
+  // of silently doing nothing.
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl.toUpperCase());
+    }
+  }, [searchParams]);
 
   const catalog = products ?? [];
 
@@ -20,7 +33,7 @@ export default function SalesDashboard() {
 
     if (selectedCategory !== "ALL") {
       result = result.filter(
-        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase(),
+        (p) => p.category.toUpperCase() === selectedCategory.toUpperCase(),
       );
     }
 
@@ -132,10 +145,12 @@ export default function SalesDashboard() {
                       </span>
                     )}
                     {item.imageUrl ? (
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.name}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale group-hover:grayscale-0 opacity-80 group-hover:opacity-100"
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105 grayscale group-hover:grayscale-0 opacity-80 group-hover:opacity-100"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-neutral-700 text-xs font-mono">
@@ -173,5 +188,19 @@ export default function SalesDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SalesDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <SalesDashboardContent />
+    </Suspense>
   );
 }
