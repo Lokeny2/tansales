@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useWishlist } from "@/context/WishlistContext";
 
 // Static Editorial Collections Data (unchanged -- just visual UI copy)
 const CATEGORIES = [
@@ -19,6 +20,7 @@ const CATEGORIES = [
 export default function HomePage() {
   // Pull the real, live catalog from Convex -- same source as everywhere else now
   const products = useQuery(api.products.listProducts);
+  const { toggleWishlist, isWishlisted } = useWishlist();
 
   return (
     <div className="max-w-7xl mx-auto px-6 pb-24">
@@ -59,7 +61,8 @@ export default function HomePage() {
 
         <div className="flex flex-col justify-between gap-4">
           {CATEGORIES.map((cat) => (
-            <div
+            <Link
+              href={`/products?category=${cat.name}`}
               key={cat.name}
               className="glass-panel p-6 rounded-sm flex justify-between items-center hover:border-white/30 transition-colors cursor-pointer"
             >
@@ -78,7 +81,7 @@ export default function HomePage() {
                   />
                 ))}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -109,43 +112,70 @@ export default function HomePage() {
             Loading catalog...
           </p>
         ) : (
-          products.map((product, index) => (
-            <Link
-              href={`/products/${product._id}`}
-              key={product._id}
-              className="group flex flex-col gap-4"
-            >
-              <div className="aspect-[3/4] bg-zinc-950 rounded-sm relative flex items-center justify-center border border-white/5 overflow-hidden">
-                <Image
-                  src={product.imageUrl}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority={index === 0}
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                />
-                {product.tag && (
-                  <span className="absolute top-4 left-4 bg-obsidian/80 backdrop-blur-md px-2 py-1 text-[9px] font-bold tracking-wider uppercase rounded-sm border border-white/10 z-10">
-                    {product.tag}
-                  </span>
-                )}
-              </div>
+          products.map((product, index) => {
+            const wishlisted = isWishlisted(product._id);
+            return (
+              <div key={product._id} className="group flex flex-col gap-4">
+                <Link href={`/products/${product._id}`} className="block">
+                  <div className="aspect-[3/4] bg-zinc-950 rounded-sm relative flex items-center justify-center border border-white/5 overflow-hidden">
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={index === 0}
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {product.tag && (
+                      <span className="absolute top-4 left-4 bg-obsidian/80 backdrop-blur-md px-2 py-1 text-[9px] font-bold tracking-wider uppercase rounded-sm border border-white/10 z-10">
+                        {product.tag}
+                      </span>
+                    )}
+                  </div>
+                </Link>
 
-              <div className="flex justify-between items-start text-xs tracking-wider uppercase">
-                <div className="flex flex-col gap-1 max-w-[75%]">
-                  <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
-                    {product.name}
-                  </h4>
-                  <span className="text-[10px] text-gray-500">
-                    Tanite Essentials
-                  </span>
+                <div className="flex justify-between items-start text-xs tracking-wider uppercase">
+                  <div className="flex flex-col gap-1 max-w-[65%]">
+                    <Link href={`/products/${product._id}`}>
+                      <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
+                        {product.name}
+                      </h4>
+                    </Link>
+                    <span className="text-[10px] text-gray-500">
+                      Tanite Essentials
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-white">
+                      KSh {product.price.toLocaleString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleWishlist({
+                          id: product._id,
+                          name: product.name,
+                          price: product.price,
+                          imageUrl: product.imageUrl,
+                          category: product.category,
+                        })
+                      }
+                      aria-label={
+                        wishlisted ? "Remove from wishlist" : "Add to wishlist"
+                      }
+                      className={`text-base leading-none transition-colors ${
+                        wishlisted
+                          ? "text-accent-lime"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      {wishlisted ? "\u2665" : "\u2661"}
+                    </button>
+                  </div>
                 </div>
-                <span className="font-semibold text-white">
-                  KSh {product.price.toLocaleString()}
-                </span>
               </div>
-            </Link>
-          ))
+            );
+          })
         )}
       </section>
     </div>
