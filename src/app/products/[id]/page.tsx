@@ -7,12 +7,14 @@ import { useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import ProductForm from "@/components/products/ProductForm";
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const product = useQuery(api.products.getProductById, {
     id: params.id as Id<"products">,
   });
+  const { toggleWishlist, isWishlisted } = useWishlist();
 
   // Still loading
   if (product === undefined) {
@@ -40,6 +42,8 @@ export default function ProductDetailPage() {
       </div>
     );
   }
+
+  const wishlisted = isWishlisted(product._id);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
@@ -69,12 +73,38 @@ export default function ProductDetailPage() {
 
         <div className="flex flex-col gap-8">
           <div className="border-b border-white/10 pb-6">
-            <span className="text-[10px] tracking-widest text-gray-400 uppercase block mb-2">
-              Tanite Essentials // {product.category}
-            </span>
-            <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white mb-3">
-              {product.name}
-            </h1>
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <span className="text-[10px] tracking-widest text-gray-400 uppercase block mb-2">
+                  Tanite Essentials // {product.category}
+                </span>
+                <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white mb-3">
+                  {product.name}
+                </h1>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  toggleWishlist({
+                    id: product._id,
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                    category: product.category,
+                  })
+                }
+                aria-label={
+                  wishlisted ? "Remove from wishlist" : "Add to wishlist"
+                }
+                className={`flex-shrink-0 text-2xl leading-none transition-colors mt-1 ${
+                  wishlisted
+                    ? "text-accent-lime"
+                    : "text-gray-500 hover:text-white"
+                }`}
+              >
+                {wishlisted ? "\u2665" : "\u2661"}
+              </button>
+            </div>
             <p className="text-xl font-medium text-white">
               KSh {product.price.toLocaleString()}
             </p>
