@@ -3,6 +3,8 @@
 # dependencies
 /node_modules
 /.pnp
+/.agents
+/.claude
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -39,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# javascript
+test-mcp.mjs
