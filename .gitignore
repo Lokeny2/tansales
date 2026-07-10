@@ -44,3 +44,4 @@ next-env.d.ts
 
 # javascript
 test-mcp.mjs
+test-api.mjs
